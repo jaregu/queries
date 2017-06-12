@@ -1,0 +1,63 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+repositories {
+    mavenCentral()
+	jcenter()
+}
+
+[ compileJava, compileTestJava ]*.options*.encoding = 'UTF-8'
+sourceCompatibility = 1.8
+version = '0.9'
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.5'
+}
+
+eclipseJdt.doLast {
+	File f = file('.settings/org.eclipse.core.resources.prefs')
+	f.write('eclipse.preferences.version=1\n')
+	f.append('encoding/<project>=utf-8')
+}
+
+configurations {
+	example
+	exampleCompile.extendsFrom testCompile
+	exampleRuntime.extendsFrom testRuntime
+}
+
+sourceSets {
+	example {
+		java { srcDir 'src/example/java' }
+		resources { srcDir 'src/example/resources' }
+	}
+}
+
+eclipse {
+	classpath {
+		plusConfigurations += [configurations.example]
+	}
+}
+
+dependencies {
+	compile 'org.slf4j:slf4j-api:1.7.+'
+	
+	testCompile 'org.mockito:mockito-core:+'
+	testCompile 'junit:junit:+'
+	testCompile  'io.dropwizard.metrics:metrics-core:3.+'
+	
+	example 'com.github.ben-manes.caffeine:caffeine:2.+'
+	example 'ch.qos.logback:logback-classic:1.2.+'
+	
+	def guiceVersion = '4.1.0'
+	example "com.google.inject:guice:${guiceVersion}"
+	example "com.google.inject.extensions:guice-servlet:${guiceVersion}"
+	example "com.google.inject.extensions:guice-assistedinject:${guiceVersion}"
+	example "com.google.inject.extensions:guice-multibindings:${guiceVersion}"
+}
+
+jar {
+	manifest {
+		attributes 'Implementation-Title': 'Jaregu Queries', 'Implementation-Version': version
+	}
+}
