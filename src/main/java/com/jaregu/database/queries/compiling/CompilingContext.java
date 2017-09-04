@@ -5,6 +5,7 @@ import java.util.function.Supplier;
 
 import com.jaregu.database.queries.QueriesConfig;
 import com.jaregu.database.queries.compiling.expr.ExpressionParser;
+import com.jaregu.database.queries.parsing.ParsedQuery;
 
 final class CompilingContext {
 
@@ -12,6 +13,7 @@ final class CompilingContext {
 
 	private ExpressionParser expressionParser;
 	private QueriesConfig config = QueriesConfig.getDefault();
+	private Optional<ParsedQuery> sourceQuery;
 
 	public static Builder forExpressionParser(ExpressionParser expressionParser) {
 		return new Builder(expressionParser);
@@ -27,6 +29,10 @@ final class CompilingContext {
 
 	public QueriesConfig getConfig() {
 		return config;
+	}
+
+	public Optional<ParsedQuery> getSourceQuery() {
+		return sourceQuery;
 	}
 
 	public <T> T withContext(Supplier<T> work) {
@@ -60,8 +66,13 @@ final class CompilingContext {
 			context = new CompilingContext(expressionParser);
 		}
 
-		public Builder withConfig(QueriesConfig config) {
+		public Builder config(QueriesConfig config) {
 			context.config = config;
+			return this;
+		}
+
+		public Builder source(ParsedQuery sourceQuery) {
+			context.sourceQuery = Optional.of(sourceQuery);
 			return this;
 		}
 

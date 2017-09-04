@@ -7,62 +7,62 @@ public abstract class EvaluableOperand implements Operand {
 	}
 
 	@Override
-	public Object multiply(Object object) {
+	public Object multiply(Operand object) {
 		return getValueConstant().multiply(object);
 	}
 
 	@Override
-	public Object divide(Object object) {
+	public Object divide(Operand object) {
 		return getValueConstant().divide(object);
 	}
 
 	@Override
-	public Object add(Object object) {
+	public Object add(Operand object) {
 		return getValueConstant().add(object);
 	}
 
 	@Override
-	public Object subtract(Object object) {
+	public Object subtract(Operand object) {
 		return getValueConstant().subtract(object);
 	}
 
 	@Override
-	public boolean greater(Object object) {
+	public boolean greater(Operand object) {
 		return getValueConstant().greater(object);
 	}
 
 	@Override
-	public boolean greaterOrEqual(Object object) {
+	public boolean greaterOrEqual(Operand object) {
 		return getValueConstant().greaterOrEqual(object);
 	}
 
 	@Override
-	public boolean lesser(Object object) {
+	public boolean lesser(Operand object) {
 		return getValueConstant().lesser(object);
 	}
 
 	@Override
-	public boolean lesserOrEqual(Object object) {
+	public boolean lesserOrEqual(Operand object) {
 		return getValueConstant().lesserOrEqual(object);
 	}
 
 	@Override
-	public boolean equal(Object object) {
+	public boolean equal(Operand object) {
 		return getValueConstant().equal(object);
 	}
 
 	@Override
-	public boolean notEqual(Object object) {
+	public boolean notEqual(Operand object) {
 		return getValueConstant().notEqual(object);
 	}
 
 	@Override
-	public boolean and(Object object) {
+	public boolean and(Operand object) {
 		return getValueConstant().and(object);
 	}
 
 	@Override
-	public boolean or(Object object) {
+	public boolean or(Operand object) {
 		return getValueConstant().or(object);
 	}
 }

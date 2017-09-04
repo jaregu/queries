@@ -18,62 +18,66 @@ public class ConstantBaseImpl<T> implements Constant {
 	}
 
 	@Override
-	public Object multiply(Object object) {
-		throw new ExpressionEvalException(getName() + " can not be multiplied by " + object);
+	public Object multiply(Operand object) {
+		throw new ExpressionEvalException(getName() + " can not be multiplied by " + object.getValue());
 	}
 
 	@Override
-	public Object divide(Object object) {
-		throw new ExpressionEvalException(getName() + " can not be divided by " + object);
+	public Object divide(Operand object) {
+		throw new ExpressionEvalException(getName() + " can not be divided by " + object.getValue());
 	}
 
 	@Override
-	public Object add(Object object) {
-		throw new ExpressionEvalException(object + " can not be added to " + getName());
+	public Object add(Operand object) {
+		throw new ExpressionEvalException(object.getValue() + " can not be added to " + getName());
 	}
 
 	@Override
-	public Object subtract(Object object) {
-		throw new ExpressionEvalException(object + " can not be subtracted from " + getName());
+	public Object subtract(Operand object) {
+		throw new ExpressionEvalException(object.getValue() + " can not be subtracted from " + getName());
 	}
 
 	@Override
-	public boolean greater(Object object) {
-		throw new ExpressionEvalException(getName() + " does not support greater comparision with: " + object);
+	public boolean greater(Operand object) {
+		throw new ExpressionEvalException(
+				getName() + " does not support greater comparision with: " + object.getValue());
 	}
 
 	@Override
-	public boolean greaterOrEqual(Object object) {
-		throw new ExpressionEvalException(getName() + " does not support greater or equal comparision with: " + object);
+	public boolean greaterOrEqual(Operand object) {
+		throw new ExpressionEvalException(
+				getName() + " does not support greater or equal comparision with: " + object.getValue());
 	}
 
 	@Override
-	public boolean lesser(Object object) {
-		throw new ExpressionEvalException(getName() + " does not support lesser comparision with: " + object);
+	public boolean lesser(Operand object) {
+		throw new ExpressionEvalException(
+				getName() + " does not support lesser comparision with: " + object.getValue());
 	}
 
 	@Override
-	public boolean lesserOrEqual(Object object) {
-		throw new ExpressionEvalException(getName() + " does not support lesser or equal comparision with: " + object);
+	public boolean lesserOrEqual(Operand object) {
+		throw new ExpressionEvalException(
+				getName() + " does not support lesser or equal comparision with: " + object.getValue());
 	}
 
 	@Override
-	public boolean and(Object object) {
-		throw new ExpressionEvalException(getName() + " does not support logical AND with: " + object);
+	public boolean and(Operand object) {
+		throw new ExpressionEvalException(getName() + " does not support logical AND with: " + object.getValue());
 	}
 
 	@Override
-	public boolean or(Object object) {
-		throw new ExpressionEvalException(getName() + " does not support logical OR with: " + object);
+	public boolean or(Operand object) {
+		throw new ExpressionEvalException(getName() + " does not support logical OR with: " + object.getValue());
 	}
 
 	@Override
-	public boolean equal(Object object) {
-		return Objects.equals(getValue(), object);
+	public boolean equal(Operand object) {
+		return Objects.equals(getValue(), object.getValue());
 	}
 
 	@Override
-	public boolean notEqual(Object object) {
+	public boolean notEqual(Operand object) {
 		return !equal(object);
 	}
 

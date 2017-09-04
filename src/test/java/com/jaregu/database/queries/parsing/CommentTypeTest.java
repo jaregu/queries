@@ -50,7 +50,7 @@ public class CommentTypeTest {
 		assertEquals("aaa", CommentType.HYPHENS.unwrap("--aaa "));
 		assertEquals("aaa", CommentType.HYPHENS.unwrap("--aaa \n \n \n   \n"));
 		assertEquals("aaa", CommentType.HYPHENS.unwrap("-- aaa    \n"));
-		assertEquals("aaa", CommentType.HYPHENS.unwrap("-- aaa    "));
+		assertEquals("aaa", CommentType.HYPHENS.unwrap("-- aaa \t\n\t   "));
 		assertEquals("aaa", CommentType.HYPHENS.unwrap("--aaa\n"));
 		assertEquals("aaa bbb", CommentType.HYPHENS.unwrap("-- aaa bbb  "));
 		assertEquals("aaa bbb", CommentType.HYPHENS.unwrap("-- aaa bbb  \n"));

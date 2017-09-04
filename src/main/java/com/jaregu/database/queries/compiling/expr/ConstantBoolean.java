@@ -1,8 +1,6 @@
 package com.jaregu.database.queries.compiling.expr;
 
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 public class ConstantBoolean extends ConstantBaseImpl<Boolean> {
 
@@ -30,21 +28,30 @@ public class ConstantBoolean extends ConstantBaseImpl<Boolean> {
 	}
 
 	@Override
-	public boolean and(Object object) {
-		return withBoolean(object, super::and, (v, o) -> v && o);
+	public boolean and(Operand operand) {
+		if (getValue()) {
+			Object otherValue = operand.getValue();
+			if (otherValue != null && otherValue instanceof Boolean) {
+				return (Boolean) otherValue;
+			} else {
+				return super.and(operand);
+			}
+		} else {
+			return false;
+		}
 	}
 
 	@Override
-	public boolean or(Object object) {
-		return withBoolean(object, super::or, (v, o) -> v || o);
-	}
-
-	private <T> T withBoolean(Object operand, Function<Object, T> defaultCall,
-			BiFunction<Boolean, Boolean, T> function) {
-		if (operand != null && operand instanceof Boolean) {
-			return function.apply(getValue(), (Boolean) operand);
+	public boolean or(Operand operand) {
+		if (getValue()) {
+			return true;
 		} else {
-			return defaultCall.apply(operand);
+			Object otherValue = operand.getValue();
+			if (otherValue != null && otherValue instanceof Boolean) {
+				return (Boolean) otherValue;
+			} else {
+				return super.and(operand);
+			}
 		}
 	}
 }

@@ -1,5 +1,6 @@
 package com.jaregu.database.queries.compiling.expr;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -7,6 +8,12 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -14,7 +21,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import com.jaregu.database.queries.building.ParamsResolver;
+import com.jaregu.database.queries.building.NamedResolver;
+import com.jaregu.database.queries.building.ParametersResolver;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExpressionParserImplTest {
@@ -22,16 +30,17 @@ public class ExpressionParserImplTest {
 	private ExpressionParserImpl impl = new ExpressionParserImpl();
 
 	@Mock
-	private ParamsResolver variableResolver;
+	private NamedResolver resolver;
 
 	@Before
 	public void setUp() {
-		when(variableResolver.getValue("aaa")).thenReturn("AAA");
-		when(variableResolver.getValue("N0")).thenReturn(0);
-		when(variableResolver.getValue("N123")).thenReturn(123);
-		when(variableResolver.getValue("N123456")).thenReturn(123.456);
-		when(variableResolver.getValue("bT")).thenReturn(true);
-		when(variableResolver.getValue("bF")).thenReturn(false);
+		when(resolver.getValue("aaa")).thenReturn("AAA");
+		when(resolver.getValue("N0")).thenReturn(0);
+		when(resolver.getValue("N123")).thenReturn(123);
+		when(resolver.getValue("N123456")).thenReturn(123.456);
+		when(resolver.getValue("bT")).thenReturn(true);
+		when(resolver.getValue("bF")).thenReturn(false);
+		when(resolver.getValue("nil")).thenReturn(null);
 	}
 
 	@Test
@@ -60,7 +69,7 @@ public class ExpressionParserImplTest {
 	}
 
 	@Test
-	public void testExpressions() {
+	public void testConstants() {
 		eval(123l, "123");
 		eval(null, " null");
 		eval(true, " true ");
@@ -69,23 +78,52 @@ public class ExpressionParserImplTest {
 		eval("abc", "'abc'");
 		eval("abc abc", "'abc abc'");
 		eval("abc ' abc ", " 'abc '' abc '  ");
-		eval("AAA", ".aaa");
-		eval(0, ".N0");
-		eval(123, ".N123");
-		eval(123.456, ".N123456");
-		eval(true, ".bT");
-		eval(false, ".bF");
+	}
 
+	@Test
+	public void testVariables() {
+		eval("AAA", ":aaa");
+		eval(0, ":N0");
+		eval(123, ":N123");
+		eval(123.456, ":N123456");
+		eval(true, ":bT");
+		eval(false, ":bF");
+		eval(null, ":nil");
+	}
+
+	@Test
+	public void testEquality() {
+		eval(true, " 1  == 1");
+		eval(false, " 1  != 1");
+		eval(true, "  1  != 2 ");
+		eval(true, " 'aAb' ==  'aAb' ");
+		eval(true, " :aaa ==  'AAA' ");
+		eval(true, "null == :nil");
+		eval(false, "null != :nil");
+		eval(true, "true == true");
+		eval(false, "true != true");
+		eval(false, "true == false");
+		eval(true, "true != false");
+	}
+
+	@Test
+	public void testMath() {
 		eval(3l, "1+2");
 		eval(6l, " 1+2+ 3   ");
 		eval(7l, "1 + 2 *   3");
 		eval(7l, " (1)  + (2) * \n (3)  \n \n");
 		eval(9l, "(1+ 2  )* 3");
 		eval(79l, " (1)  + (2 + (1 + 1 * 1 * 2 + 3) + (1 +4 + (6 + 7))) *  (3)   ");
+	}
 
+	@Test
+	public void testConcat() {
 		eval("1 2 3 4 5", "'1 '+'2 3 4'+' 5'");
-		eval("%AAA%", "'%'+ .aaa +'%'");
+		eval("%AAA%", "'%'+ :aaa +'%'");
+	}
 
+	@Test
+	public void testLogic() {
 		eval(false, "1 >2");
 		eval(true, "1 <2");
 		eval(true, "1 <=2");
@@ -101,27 +139,246 @@ public class ExpressionParserImplTest {
 		eval(false, "true && true && true && false");
 		eval(true, "true && true || true && false");
 		eval(false, "true && (true || true) && false");
-		eval(false, "(1 > 2 || 2 <=2) && (true && .bF)");
+		eval(false, "(1 > 2 || 2 <=2) && (true && :bF)");
+		eval(true, " :bT != null && :bT");
 	}
 
-	private void eval(Object result, String expression) {
-		assertEquals(result, impl.parse(expression).eval(variableResolver));
+	@Test
+	public void testEvaluationPrecedance() {
+		eval(false, ":bT && :bT && :bT && :bF && :nil");
+		eval(false, ":nil != null && :nil > 3");
+	}
+
+	@Test
+	public void testMultiple() {
+		evalMultiple("'1 '+'2 3 4'+' 5'; :aaa + 'a'", "1 2 3 4 5", "AAAa");
+		evalMultiple("'1'; '2' ; '3' ;'4';'5'", "1", "2", "3", "4", "5");
 	}
 
 	@Test
 	public void testParseException() {
-		testException("aaa");
-		testException("+");
-		testException("'a'+");
-		testException("<=   aa < bbb");
-		testException("(1+2 + (3+4) + 5");
+		parseException("aaa");
+		parseException("+");
+		parseException("'a'+");
+		parseException("<=   aa < bbb");
+		parseException("(1+2 + (3+4) + 5");
 	}
 
-	private void testException(String expression) {
+	@Test
+	public void testConstantLongOperations() {
+		eval(10l, "5 * 2");
+		eval(5l, "10 / 2");
+		eval(7l, "5 + 2");
+		eval(3l, "5 - 2");
+
+		eval(false, "5 > 5");
+		eval(false, "5 > 6");
+		eval(true, "5 > 4");
+		eval(true, "5 > 4.8");
+		evalException("5 > true");
+		evalException("5 > null");
+		evalException("5 > '123'");
+
+		eval(true, "5 >= 5");
+		eval(false, "5 >= 6");
+		eval(true, "5 >= 4");
+		evalException("5 >= true");
+		evalException("5 >= null");
+		evalException("5 >= '123'");
+
+		eval(false, "5 < 5");
+		eval(true, "5 < 6");
+		eval(false, "5 < 4");
+		evalException("5 < true");
+		evalException("5 < null");
+		evalException("5 < '123'");
+
+		eval(true, "5 <= 5");
+		eval(true, "5 <= 6");
+		eval(false, "5 <= 4");
+		evalException("5 <= true");
+		evalException("5 <= null");
+		evalException("5 <= '123'");
+
+		eval(true, "5 == 5");
+		eval(false, "5 == 6");
+		eval(false, "5 == 4");
+		eval(false, "5 == true");
+		eval(false, "5 == null");
+		eval(false, "5 == '123'");
+
+		eval(false, "5 != 5");
+		eval(true, "5 != 6");
+		eval(true, "5 != 4");
+		eval(true, "5 != true");
+		eval(true, "5 != null");
+		eval(true, "5 != '123'");
+
+		evalException("5 && 2");
+		evalException("5 || 2");
+	}
+
+	@Test
+	public void testConstantDecimalOperations() {
+		eval(new BigDecimal("13.75"), "5.5 * 2.5");
+		eval(new BigDecimal("5.4"), "10.8 / 2");
+		eval(new BigDecimal("8.7"), "5.5 + 3.2");
+		eval(new BigDecimal("3.2"), "5.5 - 2.3");
+
+		eval(false, "5.5 > 5.5");
+		eval(false, "5.5 > 6.5");
+		eval(true, "5.5 > 4.5");
+
+		eval(true, "5.5 >= 5.5");
+		eval(false, "5.5 >= 6.5");
+		eval(true, "5.5 >= 4.5");
+
+		eval(false, "5.5 < 5.5");
+		eval(true, "5.5 < 6.5");
+		eval(false, "5.5 < 4.5");
+
+		eval(true, "5.5 <= 5.5");
+		eval(true, "5.5 <= 6.5");
+		eval(false, "5.5 <= 4.5");
+
+		eval(true, "5.5 == 5.5");
+		eval(false, "5.5 == 6.5");
+		eval(false, "5.5 == 4.5");
+
+		eval(false, "5.5 != 5.5");
+		eval(true, "5.5 != 6.5");
+		eval(true, "5.5 != 4.5");
+
+		evalException("5.5 && 2.5");
+		evalException("5.5 || 2.5");
+	}
+
+	@Test
+	public void testConstantBoolean() {
+		evalException("true * 2");
+		evalException("true / 2");
+		evalException("true + 2");
+		evalException("true - 1");
+		evalException("true < true");
+		evalException("true <= false");
+		evalException("true > false");
+		evalException("true >= false");
+
+		eval(true, "true == true");
+		eval(false, "true == false");
+		eval(false, "true == 1");
+		eval(false, "true == 5.5");
+		eval(false, "true == 'true'");
+
+		eval(true, "true && true");
+		eval(false, "true && false");
+		eval(true, "true || true");
+		eval(true, "true || false");
+		eval(true, "false || true");
+		eval(false, "false || false");
+
+		evalException("true && 2.5");
+		evalException("true && 2");
+		evalException("true && '111'");
+		evalException("true && null");
+		eval(true, "true || 2.5");
+		eval(true, "true || 2");
+		eval(true, "true || '111'");
+		eval(true, "true || null");
+		evalException("false || 2.5");
+		evalException("false || 2");
+		evalException("false || '111'");
+		evalException("false || null");
+
+	}
+
+	@Test
+	public void testStringConstant() {
+		evalException("'aaa' * 2");
+		evalException("'aaa' / 2");
+		evalException("'aaa' - 1");
+		evalException("'aaa' < 'bbb'");
+		evalException("'aaa' <= 'bbb'");
+		evalException("'aaa' > 'bbb'");
+		evalException("'aaa' >= 'bbb'");
+		evalException("'aaa' && 2.5");
+		evalException("'aaa' && 2");
+		evalException("'aaa' && '111'");
+		evalException("'aaa' && null");
+		evalException("'aaa' || 2.5");
+		evalException("'aaa' || 2");
+		evalException("'aaa' || '111'");
+		evalException("'aaa' || null");
+
+		eval(true, "'aaa' == 'aaa'");
+		eval(false, "'aaa' == 'bbb'");
+		eval(false, "'aaa' == 1");
+		eval(false, "'aaa' == 5.5");
+		eval(false, "'aaa' == 'true'");
+
+		eval(false, "'aaa' != 'aaa'");
+		eval(true, "'aaa' != 'bbb'");
+		eval(true, "'aaa' != 1");
+		eval(true, "'aaa' != 5.5");
+		eval(true, "'aaa' != 'true'");
+
+		eval("aaabbb", "'aaa' + 'bbb'");
+		eval("aaa2", "'aaa' + 2");
+		eval("aaa2.58", "'aaa' + 2.58");
+		eval("aaatrue", "'aaa' + true");
+		eval("aaafalse", "'aaa' + false");
+		evalException("'aaa' + null");
+	}
+
+	private void parseException(String expression) {
 		try {
 			impl.parse(expression);
 			fail();
 		} catch (ExpressionParseException e) {
 		}
+	}
+
+	private void eval(Object expected, String expression) {
+		assertEquals(expected,
+				impl.parse(expression).get(0).eval(ParametersResolver.ofNamedParameters(resolver)).getReturnValue());
+	}
+
+	private void evalException(String expression) {
+		try {
+			impl.parse(expression).get(0).eval(ParametersResolver.ofNamedParameters(resolver));
+			fail();
+		} catch (ExpressionEvalException e) {
+		}
+	}
+
+	private void evalMultiple(String expression, Object... expected) {
+		assertThat(impl.parse(expression).stream().map(e -> e.eval(ParametersResolver.ofNamedParameters(resolver)))
+				.map(r -> r.getReturnValue()).collect(Collectors.toList())).containsExactly(expected);
+	}
+
+	@Test
+	public void testCollections() {
+
+		NamedResolver resolver = NamedResolver.forBean(new CollectionsHolder());
+		evalCol(true, ":emptySet.empty", resolver);
+		evalCol(true, ":emptyList.empty", resolver);
+		evalCol(true, ":emptyMap.empty", resolver);
+		evalCol(false, ":col1.empty", resolver);
+		evalCol(false, ":numbers.empty", resolver);
+		evalCol(false, ":strings.empty", resolver);
+	}
+
+	public static class CollectionsHolder {
+		public Set<String> emptySet = Collections.emptySet();
+		public List<String> emptyList = Collections.emptyList();
+		public Map<String, String> emptyMap = Collections.emptyMap();
+		public List<String> col1 = Collections.singletonList("1");
+		public List<Integer> numbers = Collections.unmodifiableList(Arrays.asList(1, 2, 3, 4));
+		public List<String> strings = Collections.unmodifiableList(Arrays.asList("a", "b", "c"));
+	}
+
+	private void evalCol(Object expected, String expression, NamedResolver resolver) {
+		assertEquals(expected,
+				impl.parse(expression).get(0).eval(ParametersResolver.ofNamedParameters(resolver)).getReturnValue());
 	}
 }

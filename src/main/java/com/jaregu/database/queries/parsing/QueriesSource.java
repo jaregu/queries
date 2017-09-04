@@ -4,12 +4,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Supplier;
 
+import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
 import com.jaregu.database.queries.common.StreamReader;
 
 public interface QueriesSource {
 
-	SourceId getSourceId();
+	SourceId getId();
+
+	QueryId getQueryId(String id);
 
 	String getContent();
 
@@ -25,13 +28,13 @@ public interface QueriesSource {
 	 * 
 	 * <p>
 	 * Resulting queries source ID will be class name. See
-	 * {@link SourceId#of(Class)}.
+	 * {@link SourceId#ofClass(Class)}.
 	 * 
 	 * @param clazz
 	 * @return
 	 */
-	public static QueriesSource of(Class<?> clazz) {
-		return new QueriesSourceImpl(SourceId.of(clazz), () -> {
+	public static QueriesSource ofResource(Class<?> clazz) {
+		return new QueriesSourceImpl(SourceId.ofClass(clazz), () -> {
 			String resourceName = clazz.getSimpleName() + ".sql";
 			try (InputStream inputStream = clazz.getResourceAsStream(resourceName)) {
 				if (inputStream == null) {
@@ -56,8 +59,8 @@ public interface QueriesSource {
 	 * @param resourcePath
 	 * @return
 	 */
-	public static QueriesSource of(String path) {
-		return new QueriesSourceImpl(SourceId.ofPath(path), () -> {
+	public static QueriesSource ofResource(String path) {
+		return new QueriesSourceImpl(SourceId.ofResource(path), () -> {
 			try (InputStream inputStream = QueriesSource.class.getClassLoader().getResourceAsStream(path)) {
 				if (inputStream == null) {
 					throw new QueriesParseException("Can't find resource with path: " + path);

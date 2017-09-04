@@ -9,11 +9,12 @@ public class ConstantString extends ConstantBaseImpl<String> {
 	}
 
 	@Override
-	public Object add(Object object) {
-		if (object != null) {
-			return getValue() + object.toString();
+	public Object add(Operand operand) {
+		Object otherValue = operand.getValue();
+		if (otherValue != null) {
+			return getValue() + otherValue.toString();
 		} else {
-			return super.add(object);
+			return super.add(operand);
 		}
 	}
 

@@ -1,142 +1,174 @@
 package com.jaregu.database.queries.compiling;
 
-import static com.jaregu.database.queries.compiling.CompiledQueryPart.constant;
-import static com.jaregu.database.queries.parsing.SourceQueryPart.create;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import com.jaregu.database.queries.QueriesConfig;
-import com.jaregu.database.queries.building.ParamsResolver;
+import com.jaregu.database.queries.QueryId;
+import com.jaregu.database.queries.building.BuildtQuery;
+import com.jaregu.database.queries.compiling.QueryCompilerFeature.Compiler;
+import com.jaregu.database.queries.compiling.QueryCompilerFeature.Result;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Source;
 import com.jaregu.database.queries.compiling.expr.ExpressionParser;
-import com.jaregu.database.queries.parsing.SourceQuery;
-import com.jaregu.database.queries.parsing.SourceQueryPart;
+import com.jaregu.database.queries.parsing.ParsedQuery;
+import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
 @RunWith(MockitoJUnitRunner.class)
 public class QueryCompilerImplTest {
 
-	private QueryCompilerImpl noOpCompiler;
-
-	private QueryCompilerImpl allOpCompiler;
+	private QueryId goodFood = QueryId.of("good.food");
 
 	@Mock
-	private ExpressionParser parser;
+	private ExpressionParser interior;
 
 	@Mock
-	private QueriesConfig config;
-
-	@Mock
-	private QueryCompilerFeature noOpFeature;
-
-	@Mock
-	private QueryCompilerFeature allAcceptFeature;
-
-	@Mock
-	private CompiledQueryPart compiledPart1;
-
-	@Mock
-	private CompiledQueryPart compiledPart2;
-
-	@Mock
-	private CompiledQueryPart compiledPart3;
-
-	@Mock
-	private SourceQuery sourceQuery;
-	private List<SourceQueryPart> simpleSourceParts;
-
-	@Mock
-	private ParamsResolver variableResolver;
+	private QueriesConfig reservations;
 
 	@Before
 	public void setUp() {
-		noOpCompiler = new QueryCompilerImpl(config, parser, Collections.singletonList(noOpFeature));
-		allOpCompiler = new QueryCompilerImpl(config, parser, Arrays.asList(noOpFeature, allAcceptFeature));
-		simpleSourceParts = Arrays.asList(create("1"), create("2"), create("3"));
-		when(noOpFeature.isCompilable(any())).thenReturn(false);
-
-		when(allAcceptFeature.isCompilable(any())).thenReturn(true);
-		when(allAcceptFeature.compile(any(), any())).thenReturn(() -> Collections.singletonList(compiledPart1),
-				() -> Collections.singletonList(compiledPart2), () -> Collections.singletonList(compiledPart3));
 	}
 
 	@Test
-	public void testPartIterationWithNoOp() {
+	public void testDroppings() throws Exception {
+		Cafe cafe = open(eatSequences("a", 1), eatSequences("b", 2), eatSequences("c", 3), eatEnds("<", ">"));
 
-		when(sourceQuery.getParts()).thenReturn(simpleSourceParts);
+		assertEquals("Abc", cafe.serve(unpack("abc")));
+		assertEquals("ABBcc", cafe.serve(unpack("abbcc")));
+		assertEquals("ABBCCC", cafe.serve(unpack("abbccc")));
+		assertEquals("AAABBbCCC", cafe.serve(unpack("aaabbbccc")));
 
-		ArgumentCaptor<Source> sourceCaptor = ArgumentCaptor.forClass(Source.class);
-		CompiledQuery compiledQuery = noOpCompiler.compile(sourceQuery);
-		verify(noOpFeature, times(6)).isCompilable(sourceCaptor.capture());
+		assertEquals("A", cafe.serve(unpack("<a>")));
+		assertEquals("AAA", cafe.serve(unpack("<aaa>")));
+		assertEquals("AxA", cafe.serve(unpack("<a<x>a>")));
+		assertEquals("AxABBBBdCCCd", cafe.serve(unpack("<a<x>a><bb><bb<dcccd>>")));
 
-		List<Source> allSources = sourceCaptor.getAllValues();
-
-		assertEquals("1", sourceToString(allSources.get(0)));
-		assertEquals("12", sourceToString(allSources.get(1)));
-		assertEquals("123", sourceToString(allSources.get(2)));
-		assertEquals("2", sourceToString(allSources.get(3)));
-		assertEquals("23", sourceToString(allSources.get(4)));
-		assertEquals("3", sourceToString(allSources.get(5)));
-
-		assertEquals(3, compiledQuery.getParts().size());
-		assertEquals(constant("1"), compiledQuery.getParts().get(0));
-		assertEquals(constant("2"), compiledQuery.getParts().get(1));
-		assertEquals(constant("3"), compiledQuery.getParts().get(2));
+		assertEquals("A1A2", cafe.serve("a1", "a2"));
+		assertEquals("A1A2c1B1B2c2", cafe.serve("a1", "a2", "<", "c1", "<", "b1", "b2", ">", "c2", ">"));
 	}
 
-	@Test
-	public void testPartIterationWithAllAccept() {
-
-		when(sourceQuery.getParts()).thenReturn(simpleSourceParts);
-
-		CompiledQuery compiledQuery = allOpCompiler.compile(sourceQuery);
-
-		ArgumentCaptor<Source> noOpSourceCaptor = ArgumentCaptor.forClass(Source.class);
-		verify(noOpFeature, times(3)).isCompilable(noOpSourceCaptor.capture());
-
-		ArgumentCaptor<Source> allOpSourceCaptor = ArgumentCaptor.forClass(Source.class);
-		verify(allAcceptFeature, times(3)).isCompilable(allOpSourceCaptor.capture());
-
-		List<Source> noOpSources = noOpSourceCaptor.getAllValues();
-		assertEquals("1", sourceToString(noOpSources.get(0)));
-		assertEquals("2", sourceToString(noOpSources.get(1)));
-		assertEquals("3", sourceToString(noOpSources.get(2)));
-
-		List<Source> allOpSources = allOpSourceCaptor.getAllValues();
-		assertEquals("1", sourceToString(allOpSources.get(0)));
-		assertEquals("2", sourceToString(allOpSources.get(1)));
-		assertEquals("3", sourceToString(allOpSources.get(2)));
-
-		verify(noOpFeature, times(0)).compile(any(), any());
-
-		allOpSourceCaptor = ArgumentCaptor.forClass(Source.class);
-		verify(allAcceptFeature, times(3)).compile(allOpSourceCaptor.capture(), any());
-		allOpSources = allOpSourceCaptor.getAllValues();
-		assertEquals("1", sourceToString(allOpSources.get(0)));
-		assertEquals("2", sourceToString(allOpSources.get(1)));
-		assertEquals("3", sourceToString(allOpSources.get(2)));
-
-		assertEquals(3, compiledQuery.getParts().size());
-		assertSame(compiledPart1, compiledQuery.getParts().get(0));
-		assertSame(compiledPart2, compiledQuery.getParts().get(1));
-		assertSame(compiledPart3, compiledQuery.getParts().get(2));
+	private String[] unpack(String food) {
+		return food.split("");
 	}
 
-	private String sourceToString(Source source) {
-		return source.getParts().stream().map(SourceQueryPart::getContent).reduce((s1, s2) -> s1 + s2).get();
+	@FunctionalInterface
+	private static interface Cafe {
+
+		String serve(String... food);
+	}
+
+	private Cafe open(QueryCompilerFeature... eaters) {
+		QueryCompilerImpl kitchen = new QueryCompilerImpl(reservations, interior, Arrays.asList(eaters));
+		return (food) -> serve(cook(kitchen, food));
+	}
+
+	private PreparedQuery cook(QueryCompilerImpl kitchen, String... food) {
+
+		ParsedQuery meal = mock(ParsedQuery.class);
+		List<ParsedQueryPart> portions = Arrays.asList(food).stream().map(ParsedQueryPart::create)
+				.collect(Collectors.toList());
+		when(meal.getParts()).thenReturn(portions);
+		when(meal.getQueryId()).thenReturn(goodFood);
+
+		PreparedQuery waitress = kitchen.compile(meal);
+
+		assertEquals(goodFood, waitress.getQueryId());
+		return waitress;
+	}
+
+	private String serve(PreparedQuery meal) {
+		BuildtQuery droppings = meal.build();
+		return droppings.getSql().toString();
+	}
+
+	private QueryCompilerFeature eatSequences(String eatWhat, int minPortions) {
+		QueryCompilerFeature eater = mock(QueryCompilerFeature.class);
+
+		Function<Source, Boolean> isCompilable = source -> source.getParts().size() == minPortions
+				&& source.getParts().stream().map(ParsedQueryPart::getContent).allMatch(s -> s.startsWith(eatWhat));
+
+		when(eater.isCompilable(any())).then(i -> {
+			Source source = (Source) i.getArgument(0);
+			return isCompilable.apply(source);
+		});
+		when(eater.compile(any(), any())).thenAnswer(i -> {
+			Source source = (Source) i.getArgument(0);
+			// Compiler chain = (Compiler) i.getArgument(1);
+			if (!isCompilable.apply(source)) {
+				throw new IllegalStateException("I didn't order this!");
+			}
+			List<PreparedQueryPart> compiledParts = source.getParts().stream().map(ParsedQueryPart::getContent)
+					.map(String::toUpperCase).map(this::compiledPart).collect(Collectors.toList());
+
+			Result result = () -> compiledParts;
+			return result;
+		});
+		return eater;
+	}
+
+	private QueryCompilerFeature eatEnds(String starter, String pastry) {
+		QueryCompilerFeature eater = mock(QueryCompilerFeature.class);
+
+		Function<Source, Boolean> isCompilable = source -> source.getParts().size() > 2
+				&& source.getParts().get(0).getContent().equals(starter)
+				&& source.getParts().stream().mapToInt(p -> p.getContent().equals(starter) ? 1 : 0).sum() == source
+						.getParts().stream().mapToInt(p -> p.getContent().equals(pastry) ? 1 : 0).sum()
+				&& source.getParts().get(source.getParts().size() - 1).getContent().equals(pastry);
+
+		when(eater.isCompilable(any())).then(i -> {
+			Source source = (Source) i.getArgument(0);
+			return isCompilable.apply(source);
+		});
+		when(eater.compile(any(), any())).thenAnswer(i -> {
+			Source source = (Source) i.getArgument(0);
+			Compiler chain = (Compiler) i.getArgument(1);
+			if (!isCompilable.apply(source)) {
+				throw new IllegalStateException("I didn't order this!");
+			}
+			List<PreparedQueryPart> compiledParts = chain
+					.compile(() -> source.getParts().subList(1, source.getParts().size() - 1)).getParts();
+
+			Result result = () -> compiledParts;
+			return result;
+		});
+		return eater;
+	}
+
+	private PreparedQueryPart compiledPart(String evalSql) {
+		PreparedQueryPart compiledPart = mock(PreparedQueryPart.class);
+		when(compiledPart.build(any())).thenReturn(new PreparedQueryPart.Result() {
+
+			@Override
+			public Optional<String> getSql() {
+				return Optional.of(evalSql);
+			}
+
+			@Override
+			public List<Object> getParameters() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public Map<String, Object> getAttributes() {
+				return Collections.emptyMap();
+			}
+		});
+
+		return compiledPart;
 	}
 }

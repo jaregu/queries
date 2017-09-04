@@ -3,6 +3,7 @@ package com.jaregu.database.queries.compiling;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import com.jaregu.database.queries.QueriesConfig;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Compiler;
@@ -10,8 +11,8 @@ import com.jaregu.database.queries.compiling.QueryCompilerFeature.Result;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Source;
 import com.jaregu.database.queries.compiling.expr.ExpressionParser;
 import com.jaregu.database.queries.compiling.expr.ExpressionParserImpl;
-import com.jaregu.database.queries.parsing.SourceQuery;
-import com.jaregu.database.queries.parsing.SourceQueryPart;
+import com.jaregu.database.queries.parsing.ParsedQuery;
+import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
 public class QueryCompilerImpl implements QueryCompiler, Compiler {
 
@@ -31,12 +32,13 @@ public class QueryCompilerImpl implements QueryCompiler, Compiler {
 	}
 
 	@Override
-	public CompiledQuery compile(SourceQuery sourceQuery) {
-		return CompilingContext.forExpressionParser(expressionParser).withConfig(config).build().withContext(() -> {
-			PartsCompiler compiler = new PartsCompiler(sourceQuery.getParts());
-			compiler.compile();
-			return new CompiledQueryImpl(sourceQuery.getQueryId(), compiler.getCompiledParts());
-		});
+	public PreparedQuery compile(ParsedQuery sourceQuery) {
+		return CompilingContext.forExpressionParser(expressionParser).config(config).source(sourceQuery).build()
+				.withContext(() -> {
+					PartsCompiler compiler = new PartsCompiler(sourceQuery.getParts());
+					compiler.compile();
+					return new PreparedQueryImpl(sourceQuery.getQueryId(), compiler.getCompiledParts());
+				});
 	}
 
 	@Override
@@ -48,10 +50,10 @@ public class QueryCompilerImpl implements QueryCompiler, Compiler {
 
 	private class PartsCompiler {
 
-		private List<SourceQueryPart> sourceParts;
-		private List<CompiledQueryPart> compiledParts;
+		private List<ParsedQueryPart> sourceParts;
+		private List<PreparedQueryPart> compiledParts;
 
-		public PartsCompiler(List<SourceQueryPart> sourceParts) {
+		public PartsCompiler(List<ParsedQueryPart> sourceParts) {
 			this.sourceParts = sourceParts;
 		}
 
@@ -65,13 +67,33 @@ public class QueryCompilerImpl implements QueryCompiler, Compiler {
 				for (end = start + 1; end <= sourceParts.size(); end++) {
 					compiled = false;
 					Source source = Source.of(sourceParts.subList(start, end));
-					for (QueryCompilerFeature feature : features) {
-						if (feature.isCompilable(source)) {
-							Result result = feature.compile(source, QueryCompilerImpl.this);
-							compiledParts.addAll(result.getCompiledParts());
-							compiled = true;
-							break;
+					try {
+						for (QueryCompilerFeature feature : features) {
+							if (feature.isCompilable(source)) {
+								Result result = feature.compile(source, QueryCompilerImpl.this);
+								compiledParts.addAll(result.getParts());
+								compiled = true;
+								break;
+							}
 						}
+					} catch (Throwable e) {
+						String query;
+						Optional<ParsedQuery> sourceQuery = CompilingContext.getCurrent().getSourceQuery();
+						if (sourceQuery.isPresent()) {
+							ParsedQueryPart problemPart = sourceParts.get(start);
+							StringBuilder problemQuery = new StringBuilder();
+							for (ParsedQueryPart sourcePart : sourceQuery.get().getParts()) {
+								problemQuery.append(sourcePart.getContent());
+								if (problemPart == sourcePart) {
+									problemQuery.append("<---- Problem part");
+									break;
+								}
+							}
+							query = " " + problemQuery.toString();
+						} else {
+							query = "";
+						}
+						throw new QueryCompileException("Exception while compiling query." + query, e);
 					}
 					if (compiled) {
 						break;
@@ -81,12 +103,12 @@ public class QueryCompilerImpl implements QueryCompiler, Compiler {
 				if (compiled) {
 					start = end - 1;
 				} else {
-					compiledParts.add(CompiledQueryPart.constant(sourceParts.get(start).getContent()));
+					compiledParts.add(PreparedQueryPart.constant(sourceParts.get(start).getContent()));
 				}
 			}
 		}
 
-		public List<CompiledQueryPart> getCompiledParts() {
+		public List<PreparedQueryPart> getCompiledParts() {
 			return compiledParts;
 		}
 	}
@@ -107,11 +129,12 @@ public class QueryCompilerImpl implements QueryCompiler, Compiler {
 		}
 
 		public Builder addDefaultFeatures() {
-			features.add(new QueryCompilerIgnoredCommentsFeature());
-			features.add(new QueryCompilerHyphenCommentParameterFeature());
-			features.add(new QueryCompilerSlashCommentParameterFeature());
-			features.add(new QueryCompilerBlockFeature());
-			features.add(new QueryCompilerBindedVariableFeature());
+			features.add(new IgnoredCommentFeature());
+			features.add(new OptionalHyphenNamedParameterFeature());
+			features.add(new OptionalSlashNamedParameterFeature());
+			features.add(new BlockFeature());
+			features.add(new NamedVariableFeature());
+			features.add(new AnonymousVariableFeature());
 			return this;
 		}
 

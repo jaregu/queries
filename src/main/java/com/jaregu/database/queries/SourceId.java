@@ -8,18 +8,18 @@ public interface SourceId {
 
 	String getId();
 
-	QueryId queryId(String id);
+	QueryId getQueryId(String id);
 
-	static SourceId of(Class<?> clazz) {
+	static SourceId ofClass(Class<?> clazz) {
 		return new SourceIdImpl(clazz.getName());
 	}
 
-	static SourceId of(String id) {
+	static SourceId ofId(String id) {
 		return new SourceIdImpl(id);
 	}
 
-	static SourceId ofPath(String fileName) {
-		String id = fileName.trim();
+	static SourceId ofResource(String resource) {
+		String id = resource.trim();
 		id = (id.indexOf('.') > 0 ? id.substring(0, id.lastIndexOf('.')) : id).replace('\\', '.').replace('/', '.');
 		while (id.startsWith(".")) {
 			id = id.substring(1);
@@ -52,7 +52,7 @@ public interface SourceId {
 		}
 
 		@Override
-		public QueryId queryId(String id) {
+		public QueryId getQueryId(String id) {
 			return QueryId.of(this, id);
 		}
 

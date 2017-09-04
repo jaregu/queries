@@ -32,16 +32,16 @@ public class QueriesImplTest {
 	public static void main(String[] args) throws InterruptedException {
 		ConsoleReporter reporter = ConsoleReporter.forRegistry(metrics).convertRatesTo(TimeUnit.SECONDS)
 				.convertDurationsTo(TimeUnit.MICROSECONDS).build();
-		//reporter.start(1, TimeUnit.SECONDS);
+		// reporter.start(1, TimeUnit.SECONDS);
 
-		Queries queries = Queries.forSources(
-				QueriesSources.of(Arrays.asList(QueriesSource.of("com/jaregu/database/queries/AppUsersDAO.sql"))));
+		Queries queries = Queries.ofSources(QueriesSources
+				.of(Arrays.asList(QueriesSource.ofResource("com/jaregu/database/queries/AppUsersDAO.sql"))));
 		final Timer.Context context = responses.time();
 		for (int i = 0; i < 100000; i++) {
 			try (Timer.Context oneq = query.time()) {
 				Map<String, Object> params = new HashMap<>();
 				params.put("userid", 1234l);
-				queries.get(QueryId.of("AppUsersDAO.some"), params);
+				queries.get(QueryId.of("AppUsersDAO.some")).build(params);
 			}
 		}
 		context.stop();

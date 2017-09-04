@@ -39,6 +39,15 @@ public class QueriesProvider implements Provider<Queries> {
 		return helper.queriesSources;
 	}
 
+	public static Module queriesModule() {
+		return new AbstractModule() {
+			@Override
+			protected void configure() {
+				bind(Queries.class).toProvider(QueriesProvider.class);
+			}
+		};
+	}
+
 	public static Module sources(QueriesSource... sources) {
 		return new AbstractModule() {
 			@Override

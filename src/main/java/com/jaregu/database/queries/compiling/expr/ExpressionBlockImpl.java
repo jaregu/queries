@@ -41,7 +41,7 @@ public class ExpressionBlockImpl extends EvaluableOperand implements ExpressionB
 	@Override
 	public Object getValue() {
 		if (operationType.isPresent()) {
-			return operationType.get().invoke(firstOperand, secondOperand.get().getValue());
+			return operationType.get().invoke(firstOperand, secondOperand.get());
 		} else {
 			return firstOperand.getValue();
 		}

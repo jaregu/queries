@@ -4,8 +4,8 @@ import java.util.function.Function;
 
 import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
-import com.jaregu.database.queries.compiling.CompiledQuery;
-import com.jaregu.database.queries.parsing.SourceQueries;
+import com.jaregu.database.queries.compiling.PreparedQuery;
+import com.jaregu.database.queries.parsing.ParsedQueries;
 
 public class QueriesCacheNoCache implements QueriesCache {
 
@@ -15,12 +15,12 @@ public class QueriesCacheNoCache implements QueriesCache {
 	}
 
 	@Override
-	public SourceQueries getSourceQueries(SourceId sourceId, Function<SourceId, SourceQueries> queriesSupplier) {
+	public ParsedQueries getParsedQueries(SourceId sourceId, Function<SourceId, ParsedQueries> queriesSupplier) {
 		return queriesSupplier.apply(sourceId);
 	}
 
 	@Override
-	public CompiledQuery getCompiledQuery(QueryId queryId, Function<QueryId, CompiledQuery> querySupplier) {
+	public PreparedQuery getPreparedQuery(QueryId queryId, Function<QueryId, PreparedQuery> querySupplier) {
 		return querySupplier.apply(queryId);
 	}
 

@@ -20,14 +20,14 @@ import com.jaregu.database.queries.SourceId;
 @RunWith(MockitoJUnitRunner.class)
 public class QueriesParserImplTest {
 
-	final private static SourceId SOURCE_ID = SourceId.of("some.source.id");
+	final private static SourceId SOURCE_ID = SourceId.ofId("some.source.id");
 
 	private QueriesParserImpl parser = new QueriesParserImpl();
 
 	@Test(expected = QueriesParseException.class)
 	public void testNoCommentParse() throws Exception {
 		QueriesSource source = mock(QueriesSource.class);
-		when(source.getSourceId()).thenReturn(SOURCE_ID);
+		when(source.getId()).thenReturn(SOURCE_ID);
 		when(source.getContent()).thenReturn("some simple content");
 		parser.parse(source);
 	}
@@ -35,7 +35,7 @@ public class QueriesParserImplTest {
 	@Test
 	public void testNewLinesAfterQuery() throws Exception {
 		QueriesSource source = mock(QueriesSource.class);
-		when(source.getSourceId()).thenReturn(SOURCE_ID);
+		when(source.getId()).thenReturn(SOURCE_ID);
 		when(source.getContent()).thenReturn("some simple content --query 1\n;\n\n\n\n\n");
 		parser.parse(source);
 	}
@@ -43,18 +43,26 @@ public class QueriesParserImplTest {
 	@Test
 	public void testSimpleQueries() throws Exception {
 		testQueries(queries(query("query 0", queryId("--query 0"))));
+
 		testQueries(queries(query("query 1", queryId("--query 1\n"), "some ", ":simple", " content")));
+
 		testQueries(queries(query("query 2", queryId("-- query 2\n"), "some ", ":really.simple", " content\n",
 				"some more content")));
+
 		testQueries(queries(
 				query("query 2-1", queryId("-- query 2-1 \n"), "some simple content\n", "some more content\n")));
+
 		testQueries(queries(
 				query("query 3", queryId("--  query 3\n"), "some simple content\n", "--  ending with comment\n")));
+
 		testQueries(queries(
 				query("query 3-1", queryId("--  query 3-1 \n"), "some simple content\n", "--  ending with comment\n")));
+
 		testQueries(queries(
 				query("q4", queryId("/*q4 */"), "some simple content  ", "/* additional comment in the same line */")));
+
 		testQueries(queries(query("q 5", queryId("/*  q 5  */"), "some simple content")));
+
 		testQueries(queries(query("query 6", queryId("/*  query 6  */"), "\n", "some simple content line\n", ";")));
 
 		testQueries(queries(query("query 7", queryId("/*  query 7  */"), "\n", "line 1\n", "line 2\n", "line 3\n",
@@ -66,8 +74,12 @@ public class QueriesParserImplTest {
 
 		testQueries(queries(query("query 9", "query is is not on first line \n", "but is on second ",
 				queryId("--query 9\n"), "some content")));
+
 		testQueries(queries(query("query 10", queryId("/* query 10 */"), "/* multiple comments*/",
 				"/* multiple comments*/", "-- last one\n")));
+
+		testQueries(queries(
+				query("query 11", queryId("/* query 11 */"), "something ", "?", " ", "/* Anonymous binding */")));
 	}
 
 	@Test
@@ -101,15 +113,15 @@ public class QueriesParserImplTest {
 
 	private void testQueries(TestQueries queries) {
 		String sql = queries.toString();
-		SourceQueries sourceQueries = null;
+		ParsedQueries sourceQueries = null;
 		TestQuery query = null;
-		SourceQuery sourceQuery = null;
+		ParsedQuery sourceQuery = null;
 		CharSequence part = null;
-		SourceQueryPart queryPart = null;
+		ParsedQueryPart queryPart = null;
 		try {
 			QueriesSource source = mock(QueriesSource.class);
 			when(source.getContent()).thenReturn(sql);
-			when(source.getSourceId()).thenReturn(SOURCE_ID);
+			when(source.getId()).thenReturn(SOURCE_ID);
 
 			sourceQueries = parser.parse(source);
 
@@ -165,9 +177,10 @@ public class QueriesParserImplTest {
 		return new QueryIdPart(comment);
 	}
 
-	/*private static CommentPart comment(String comment) {
-		return new CommentPart(comment);
-	}*/
+	/*
+	 * private static CommentPart comment(String comment) { return new
+	 * CommentPart(comment); }
+	 */
 
 	private static class TestQueries {
 
@@ -200,12 +213,11 @@ public class QueriesParserImplTest {
 		}
 	}
 
-	/*private static class CommentPart extends CustomCharSequence {
-	
-		public CommentPart(String comment) {
-			super(comment);
-		}
-	}*/
+	/*
+	 * private static class CommentPart extends CustomCharSequence {
+	 * 
+	 * public CommentPart(String comment) { super(comment); } }
+	 */
 
 	private static class QueryIdPart extends CustomCharSequence {
 

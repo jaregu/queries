@@ -3,7 +3,7 @@ package com.jaregu.database.queries.compiling;
 import java.util.Collections;
 import java.util.List;
 
-import com.jaregu.database.queries.parsing.SourceQueryPart;
+import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
 public interface QueryCompilerFeature {
 
@@ -20,9 +20,9 @@ public interface QueryCompilerFeature {
 	@FunctionalInterface
 	public interface Source {
 
-		List<SourceQueryPart> getParts();
+		List<ParsedQueryPart> getParts();
 
-		public static Source of(List<SourceQueryPart> parts) {
+		public static Source of(List<ParsedQueryPart> parts) {
 			return new ImmutableSource(parts);
 		}
 	}
@@ -30,19 +30,19 @@ public interface QueryCompilerFeature {
 	@FunctionalInterface
 	public interface Result {
 
-		List<CompiledQueryPart> getCompiledParts();
+		List<PreparedQueryPart> getParts();
 	}
 
 	static class ImmutableSource implements Source {
 
-		final private List<SourceQueryPart> parts;
+		final private List<ParsedQueryPart> parts;
 
-		public ImmutableSource(List<SourceQueryPart> parts) {
+		public ImmutableSource(List<ParsedQueryPart> parts) {
 			this.parts = Collections.unmodifiableList(parts);
 		}
 
 		@Override
-		public List<SourceQueryPart> getParts() {
+		public List<ParsedQueryPart> getParts() {
 			return parts;
 		}
 	}

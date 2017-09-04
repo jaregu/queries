@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,7 +29,8 @@ public class ExpressionParserImpl implements ExpressionParser {
 	@Override
 	public boolean isLikeExpression(String expression) {
 		Parts parts = split(expression);
-		// if there is no two sequential sequences - lets answer that this is expression
+		// if there is no two sequential sequences - lets answer that this is
+		// expression
 		Part lastPart = null;
 		for (Part part : parts) {
 			if (lastPart != null && lastPart.isSequence() && part.isSequence()) {
@@ -40,17 +42,22 @@ public class ExpressionParserImpl implements ExpressionParser {
 	}
 
 	@Override
-	public Expression parse(String expression) throws ExpressionParseException {
+	public List<Expression> parse(String expression) throws ExpressionParseException {
 		return ParsingContext.forExpression(expression).build().withContext(() -> {
 			logger.trace("Parsing expression (0): {}", expression);
 			Parts parts = split(expression);
 			logger.trace("Parsing expression (1) after splitting: {}", parts);
-			Parts hierarchical = getHierarchical(parts);
-			logger.trace("Parsing expression (2) after creating block: {}", parts);
-			Operand operand = getOperands(hierarchical);
-			logger.trace("Parsing expression (3) after compiling: {}", operand);
-
-			return new ExpressionImpl(new ExpressionBlockImpl(operand));
+			List<Parts> expressions = getExpressionParts(parts);
+			logger.trace("Parsing expression (2) after expression parts: {}", expressions);
+			List<ExpressionBlock> result = new ArrayList<>(expressions.size());
+			for (Parts expressionPart : expressions) {
+				Parts hierarchical = getHierarchical(expressionPart);
+				logger.trace("Parsing expression (3) after creating block: {}", parts);
+				Operand operand = getOperands(hierarchical);
+				logger.trace("Parsing expression (4) after compiling: {}", operand);
+				result.add(new ExpressionBlockImpl(operand));
+			}
+			return result.stream().map(ExpressionImpl::new).collect(Collectors.toList());
 		});
 	}
 
@@ -75,7 +82,7 @@ public class ExpressionParserImpl implements ExpressionParser {
 				} else if (lx.lookingAt(Lexer.whitespace())) {
 					lx.read(WHITESPACE);
 				} else {
-					throw new ExpressionParseException("Can't reed next token : " + lx);
+					throw new ExpressionParseException("Can't read next token : " + lx);
 				}
 			}
 
@@ -84,9 +91,36 @@ public class ExpressionParserImpl implements ExpressionParser {
 	}
 
 	/*
-	 * Splits flat part list to hierarchical list using existing brackets. Like a - ( b + c) -> a - block(b + c)
+	 * Splits expression into multiple expressions expr1[;expr2]...
 	 * 
 	 * @param parts
+	 * 
+	 * @return
+	 */
+	private List<Parts> getExpressionParts(Parts parts) {
+		List<Parts> expressionParts = new LinkedList<>();
+		int index = 0;
+		for (int i = 0; i < parts.size(); i++) {
+			Part part = parts.get(i);
+			if (part.isSeparator() && part.getSeparator() == ExpressionSeparator.SEMICOLON) {
+				if (i - index > 0) {
+					expressionParts.add(parts.subParts(index, i));
+					index = i + 1;
+				}
+			}
+		}
+		if (index < parts.size()) {
+			expressionParts.add(parts.subParts(index, parts.size()));
+		}
+		return expressionParts;
+	}
+
+	/*
+	 * Splits flat part list to hierarchical list using existing brackets. Like
+	 * a - ( b + c) -> a - block(b + c)
+	 * 
+	 * @param parts
+	 * 
 	 * @return
 	 */
 	private Parts getHierarchical(Parts parts) {
@@ -126,7 +160,8 @@ public class ExpressionParserImpl implements ExpressionParser {
 	}
 
 	/*
-	 * Splits everything as operand and operation blocks consisting of tree elements using operation precedence.
+	 * Splits everything as operand and operation blocks consisting of tree
+	 * elements using operation precedence.
 	 */
 	private Operand getOperands(Parts parts) {
 		if (parts.size() == 1) {
@@ -200,7 +235,9 @@ public class ExpressionParserImpl implements ExpressionParser {
 		List<Separator> separators = new ArrayList<>(OperationType.values().length + BlockSymbol.values().length);
 		separators.addAll(Arrays.asList(OperationType.values()));
 		separators.addAll(Arrays.asList(BlockSymbol.values()));
-		// sort separators using their length in reverse order, to match longest separators first,
+		separators.addAll(Arrays.asList(ExpressionSeparator.values()));
+		// sort separators using their length in reverse order, to match longest
+		// separators first,
 		// because longest can contain shortest ones
 		Collections.sort(separators, (s1, s2) -> {
 			return Integer.compare(s2.getSequence().length(), s1.getSequence().length());

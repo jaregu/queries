@@ -33,16 +33,16 @@ public enum OperationType implements Separator {
 	;
 
 	final private String sequence;
-	final private BiFunction<Operand, Object, Object> function;
+	final private BiFunction<Operand, Operand, Object> function;
 	final private int precedence;
 
-	private OperationType(String sequence, BiFunction<Operand, Object, Object> function, int precedence) {
+	private OperationType(String sequence, BiFunction<Operand, Operand, Object> function, int precedence) {
 		this.sequence = sequence;
 		this.function = function;
 		this.precedence = precedence;
 	}
 
-	public Object invoke(Operand operand, Object value) {
+	public Object invoke(Operand operand, Operand value) {
 		return function.apply(operand, value);
 	}
 

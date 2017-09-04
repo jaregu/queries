@@ -21,7 +21,7 @@ public interface QueryId {
 							+ id);
 		}
 		int splitIndex = id.lastIndexOf(".");
-		return new QueryIdImpl(SourceId.of(id.substring(0, splitIndex)), id.substring(splitIndex + 1));
+		return new QueryIdImpl(SourceId.ofId(id.substring(0, splitIndex)), id.substring(splitIndex + 1));
 	}
 
 	static final class QueryIdImpl implements QueryId {
@@ -49,7 +49,7 @@ public interface QueryId {
 
 		@Override
 		public String toString() {
-			return "QueryId{" + sourceId.getId() + "." + id + "}";
+			return "QueryId[" + sourceId.getId() + "." + id + "]";
 		}
 
 		@Override

@@ -18,17 +18,19 @@ public class QueriesParserImpl implements QueriesParser {
 	private static final LexerPattern BLOCK_COMMENT = Lexer.newPattern().stopAfter("*/");
 	private static final LexerPattern NAMED_VARIABLE = Lexer.newPattern()
 			.stopAfter(Lexer.regexp(Pattern.compile(":(\\w+\\.)*\\w+")));
-	private static final LexerPattern SQL_PART = Lexer.newPattern().skipAllBetween("'", "'").skipAllBetween("\"", "\"")
-			.skipSequence("::").stopAfterAnyOf(";").stopBeforeAnyOf("--", "/*", ":").stopAtEof();
+	private static final LexerPattern ANONYMOUS_VARIABLE = Lexer.newPattern().stopAfter("?");
+	private static final LexerPattern SQL_PART = Lexer.newPattern().skipAllBetween("'", "'").skipAllBetween("`", "`")
+			.skipAllBetween("\"", "\"").skipSequence("::").stopAfterAnyOf(";").stopBeforeAnyOf("--", "/*", ":", "?")
+			.stopAtEof();
 	private static final StringSplitter BREAK_TO_LINES = StringSplitter.on('\n').includeSeparator(true);
 
 	@Override
-	public SourceQueries parse(QueriesSource source) {
+	public ParsedQueries parse(QueriesSource source) {
 		List<String> parts = splitSource(source.getContent());
-		List<List<SourceQueryPart>> queries = groupQueries(parts);
-		List<SourceQuery> sourceQueries = queries.stream().map(q -> createSourceQuery(source.getSourceId(), q))
+		List<List<ParsedQueryPart>> queries = groupQueries(parts);
+		List<ParsedQuery> sourceQueries = queries.stream().map(q -> createSourceQuery(source.getId(), q))
 				.collect(Collectors.toList());
-		return new SourceQueriesImpl(source.getSourceId(), sourceQueries);
+		return new ParsedQueriesImpl(source.getId(), sourceQueries);
 	}
 
 	private List<String> splitSource(String source) {
@@ -42,8 +44,10 @@ public class QueriesParserImpl implements QueriesParser {
 				parts.add(lx.read(BLOCK_COMMENT));
 			} else if (lx.lookingAt(":")) {
 				parts.add(lx.read(NAMED_VARIABLE));
+			} else if (lx.lookingAt("?")) {
+				parts.add(lx.read(ANONYMOUS_VARIABLE));
 			} else {
-				//MME it is close to 10 times faster to split outside lexer
+				// MME it is close to 10 times faster to split outside lexer
 				String chunk = lx.read(SQL_PART);
 				parts.addAll(BREAK_TO_LINES.split(chunk));
 			}
@@ -51,13 +55,15 @@ public class QueriesParserImpl implements QueriesParser {
 		return parts;
 	}
 
-	private List<List<SourceQueryPart>> groupQueries(List<String> parts) {
-		List<List<SourceQueryPart>> queries = new LinkedList<>();
-		List<SourceQueryPart> currentQuery = new LinkedList<>();
+	private List<List<ParsedQueryPart>> groupQueries(List<String> parts) {
+		List<List<ParsedQueryPart>> queries = new LinkedList<>();
+		List<ParsedQueryPart> currentQuery = new LinkedList<>();
 		for (String part : parts) {
-			SourceQueryPart queryPart = SourceQueryPart.create(part);
+			// boolean endingPart = && part.endsWith(";");
+			// endingPart ? part.substring(0, part.length() - 1) :
+			ParsedQueryPart queryPart = ParsedQueryPart.create(part);
 			currentQuery.add(queryPart);
-			if (!queryPart.isComment() && queryPart.getContent().contains(";")) {
+			if (!queryPart.isComment() && queryPart.getContent().endsWith(";")) {
 				queries.add(currentQuery);
 
 				currentQuery = new LinkedList<>();
@@ -69,13 +75,13 @@ public class QueriesParserImpl implements QueriesParser {
 		return queries;
 	}
 
-	private SourceQueryImpl createSourceQuery(SourceId sourceId, List<SourceQueryPart> parts) {
-		List<SourceQueryPart> queryParts = new ArrayList<>(parts.size() + 1);
+	private ParsedQueryImpl createSourceQuery(SourceId sourceId, List<ParsedQueryPart> parts) {
+		List<ParsedQueryPart> queryParts = new ArrayList<>(parts.size() + 1);
 		QueryId queryId = null;
-		for (SourceQueryPart part : parts) {
+		for (ParsedQueryPart part : parts) {
 			if (queryId == null && part.isComment()) {
 				queryId = QueryId.of(sourceId, part.getCommentContent());
-				queryParts.add(SourceQueryPart.create(part.getCommentType().wrap(" QUERY ID: " + queryId)));
+				queryParts.add(ParsedQueryPart.create(part.getCommentType().wrap(" QUERY ID: " + queryId)));
 			} else {
 				queryParts.add(part);
 			}
@@ -87,6 +93,6 @@ public class QueriesParserImpl implements QueriesParser {
 							+ parts);
 		}
 
-		return new SourceQueryImpl(queryId, queryParts);
+		return new ParsedQueryImpl(queryId, queryParts);
 	}
 }

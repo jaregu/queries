@@ -19,8 +19,8 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
-import com.jaregu.database.queries.compiling.CompiledQuery;
-import com.jaregu.database.queries.parsing.SourceQueries;
+import com.jaregu.database.queries.compiling.PreparedQuery;
+import com.jaregu.database.queries.parsing.ParsedQueries;
 
 @RunWith(MockitoJUnitRunner.class)
 public class QueriesMapCacheTest {
@@ -28,22 +28,22 @@ public class QueriesMapCacheTest {
 	private QueriesMapCache cache = new QueriesMapCache();
 
 	@Mock
-	private SourceQueries sourceQueriesA;
+	private ParsedQueries sourceQueriesA;
 
 	@Mock
-	private SourceQueries sourceQueriesB;
+	private ParsedQueries sourceQueriesB;
 
 	@Mock
-	private SourceQueries sourceQueriesC;
+	private ParsedQueries sourceQueriesC;
 
 	@Mock
-	private CompiledQuery compiledQuery1;
+	private PreparedQuery compiledQuery1;
 
 	@Mock
-	private CompiledQuery compiledQuery2;
+	private PreparedQuery compiledQuery2;
 
 	@Mock
-	private CompiledQuery compiledQuery3;
+	private PreparedQuery compiledQuery3;
 
 	@Before
 	public void setUp() {
@@ -53,13 +53,13 @@ public class QueriesMapCacheTest {
 	@Test
 	public void testGetSourceQueries() throws Exception {
 
-		Map<SourceId, SourceQueries> sources = new HashMap<>();
-		sources.put(SourceId.of("aaa"), sourceQueriesA);
-		sources.put(SourceId.of("bbb"), sourceQueriesB);
-		sources.put(SourceId.of("ccc"), sourceQueriesC);
+		Map<SourceId, ParsedQueries> sources = new HashMap<>();
+		sources.put(SourceId.ofId("aaa"), sourceQueriesA);
+		sources.put(SourceId.ofId("bbb"), sourceQueriesB);
+		sources.put(SourceId.ofId("ccc"), sourceQueriesC);
 
 		Map<SourceId, Integer> invokedCounts = new ConcurrentHashMap<>();
-		Function<SourceId, SourceQueries> sourceQueriesSupplier = (id) -> {
+		Function<SourceId, ParsedQueries> sourceQueriesSupplier = (id) -> {
 			invokedCounts.compute(id, (key, curr) -> curr == null ? 1 : curr + 1);
 			try {
 				Thread.sleep(100);
@@ -70,8 +70,8 @@ public class QueriesMapCacheTest {
 		};
 
 		List<SourceId> keys = new ArrayList<>(sources.keySet());
-		List<SourceQueries> results = doRequest(
-				(index) -> cache.getSourceQueries(keys.get(index % 3), sourceQueriesSupplier), 30);
+		List<ParsedQueries> results = doRequest(
+				(index) -> cache.getParsedQueries(keys.get(index % 3), sourceQueriesSupplier), 30);
 
 		for (int count : invokedCounts.values()) {
 			assertEquals(1, count);
@@ -85,13 +85,13 @@ public class QueriesMapCacheTest {
 	@Test
 	public void testGetCompiledQuery() throws Exception {
 
-		Map<QueryId, CompiledQuery> sources = new HashMap<>();
-		sources.put(SourceId.of("1").queryId("1"), compiledQuery1);
+		Map<QueryId, PreparedQuery> sources = new HashMap<>();
+		sources.put(SourceId.ofId("1").getQueryId("1"), compiledQuery1);
 		sources.put(QueryId.of("2.1"), compiledQuery2);
 		sources.put(QueryId.of("2.2"), compiledQuery3);
 
 		Map<QueryId, Integer> invokedCounts = new ConcurrentHashMap<>();
-		Function<QueryId, CompiledQuery> sourceQueriesSupplier = (id) -> {
+		Function<QueryId, PreparedQuery> sourceQueriesSupplier = (id) -> {
 			invokedCounts.compute(id, (key, curr) -> curr == null ? 1 : curr + 1);
 			try {
 				Thread.sleep(100);
@@ -102,8 +102,8 @@ public class QueriesMapCacheTest {
 		};
 
 		List<QueryId> keys = new ArrayList<>(sources.keySet());
-		List<CompiledQuery> results = doRequest(
-				(index) -> cache.getCompiledQuery(keys.get(index % 3), sourceQueriesSupplier), 30);
+		List<PreparedQuery> results = doRequest(
+				(index) -> cache.getPreparedQuery(keys.get(index % 3), sourceQueriesSupplier), 30);
 
 		for (int count : invokedCounts.values()) {
 			assertEquals(1, count);

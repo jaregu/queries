@@ -7,24 +7,24 @@ import java.util.function.Function;
 
 import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
-import com.jaregu.database.queries.compiling.CompiledQuery;
-import com.jaregu.database.queries.parsing.SourceQueries;
+import com.jaregu.database.queries.compiling.PreparedQuery;
+import com.jaregu.database.queries.parsing.ParsedQueries;
 
 public class QueriesMapCache implements QueriesCache {
 
-	private ConcurrentHashMap<SourceId, SourceQueries> sources = new ConcurrentHashMap<>();
-	private ConcurrentHashMap<QueryId, CompiledQuery> queries = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<SourceId, ParsedQueries> sources = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<QueryId, PreparedQuery> queries = new ConcurrentHashMap<>();
 
 	public QueriesMapCache() {
 	}
 
 	@Override
-	public SourceQueries getSourceQueries(SourceId sourceId, Function<SourceId, SourceQueries> queriesSupplier) {
+	public ParsedQueries getParsedQueries(SourceId sourceId, Function<SourceId, ParsedQueries> queriesSupplier) {
 		return sources.computeIfAbsent(sourceId, queriesSupplier);
 	}
 
 	@Override
-	public CompiledQuery getCompiledQuery(QueryId queryId, Function<QueryId, CompiledQuery> querySupplier) {
+	public PreparedQuery getPreparedQuery(QueryId queryId, Function<QueryId, PreparedQuery> querySupplier) {
 		return queries.computeIfAbsent(queryId, querySupplier);
 	}
 
@@ -32,9 +32,9 @@ public class QueriesMapCache implements QueriesCache {
 	public void invalidate(SourceId sourceId) {
 		synchronized (this) {
 			sources.remove(sourceId);
-			Iterator<Entry<QueryId, CompiledQuery>> iter = queries.entrySet().iterator();
+			Iterator<Entry<QueryId, PreparedQuery>> iter = queries.entrySet().iterator();
 			while (iter.hasNext()) {
-				Entry<QueryId, CompiledQuery> entry = iter.next();
+				Entry<QueryId, PreparedQuery> entry = iter.next();
 				if (entry.getKey().getSourceId().equals(sourceId)) {
 					iter.remove();
 				}

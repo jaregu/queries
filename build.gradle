@@ -1,5 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
+apply plugin: 'eclipse-wtp'
 
 repositories {
     mavenCentral()
@@ -44,16 +45,29 @@ dependencies {
 	
 	testCompile 'org.mockito:mockito-core:+'
 	testCompile 'junit:junit:+'
+	testCompile 'org.assertj:assertj-core:3.8.0'
+	
 	testCompile  'io.dropwizard.metrics:metrics-core:3.+'
 	
-	example 'com.github.ben-manes.caffeine:caffeine:2.+'
-	example 'ch.qos.logback:logback-classic:1.2.+'
-	
+	//dependency injection
 	def guiceVersion = '4.1.0'
 	example "com.google.inject:guice:${guiceVersion}"
 	example "com.google.inject.extensions:guice-servlet:${guiceVersion}"
 	example "com.google.inject.extensions:guice-assistedinject:${guiceVersion}"
 	example "com.google.inject.extensions:guice-multibindings:${guiceVersion}"
+	
+	//caching
+	example "com.github.ben-manes.caffeine:caffeine:2.+"
+	
+	//logging
+	example "ch.qos.logback:logback-classic:1.2.+"
+	example "org.codehaus.groovy:groovy-all:2.4.+"
+	
+	//db
+	example "org.hsqldb:hsqldb:2.4.+"
+	example 'org.mariadb.jdbc:mariadb-java-client:1.5.+'
+	example "com.zaxxer:HikariCP:2.6+"
+	example 'org.dalesbred:dalesbred:1.2.+'
 }
 
 jar {

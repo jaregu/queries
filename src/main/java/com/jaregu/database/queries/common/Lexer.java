@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-public class Lexer /*implements CharSequence*/ {
+public class Lexer /* implements CharSequence */ {
 
 	public static LexerPattern newPattern() {
 		return new LexerPatternImpl(Collections.emptyList(), Collections.emptyList());
@@ -84,20 +84,15 @@ public class Lexer /*implements CharSequence*/ {
 
 	}
 
-	/*@Override
-	public int length() {
-		return text.length() - offset;
-	}
-	
-	@Override
-	public char charAt(int index) {
-		return text.charAt(offset + index);
-	}
-	
-	@Override
-	public CharSequence subSequence(int start, int end) {
-		return text.substring(offset + start, offset + end);
-	}*/
+	/*
+	 * @Override public int length() { return text.length() - offset; }
+	 * 
+	 * @Override public char charAt(int index) { return text.charAt(offset +
+	 * index); }
+	 * 
+	 * @Override public CharSequence subSequence(int start, int end) { return
+	 * text.substring(offset + start, offset + end); }
+	 */
 
 	@Override
 	public String toString() {
@@ -203,7 +198,8 @@ public class Lexer /*implements CharSequence*/ {
 						if (stopFinders.isEmpty()) {
 							return new LexerException("No stop instructions defined!");
 						} else {
-							//TODO better error, maybe use offset to show real text part where something is expected
+							// TODO better error, maybe use offset to show real
+							// text part where something is expected
 							return new LexerException("One of end sequences expected: " + stopFinders);
 						}
 					});
@@ -397,7 +393,7 @@ public class Lexer /*implements CharSequence*/ {
 			int endIndex = text.indexOf(end, text.indexOf(start, offset) + start.length());
 			if (endIndex < 0) {
 				throw new LexerException(this + " instruction started at index: " + text.indexOf(start, offset)
-						+ " but there is no end symbol!");
+						+ " but there is no end symbol! While parsing: " + text.substring(offset));
 			}
 			return endIndex + end.length();
 		}

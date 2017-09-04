@@ -10,39 +10,39 @@ public class SourceIdTest {
 
 	@Test
 	public void testClassCreation() throws Exception {
-		assertEquals("com.jaregu.database.queries.SourceIdTest", SourceId.of(SourceIdTest.class).getId());
+		assertEquals("com.jaregu.database.queries.SourceIdTest", SourceId.ofClass(SourceIdTest.class).getId());
 	}
 
 	@Test
 	public void testStringCreation() throws Exception {
-		assertEquals("aaaBBB", SourceId.of("aaaBBB").getId());
-		assertEquals("aaaBBB", SourceId.of("aaaBBB ").getId());
-		assertEquals("aaaBBB", SourceId.of(" aaaBBB").getId());
-		assertEquals("aaaBBB", SourceId.of(" aaaBBB ").getId());
+		assertEquals("aaaBBB", SourceId.ofId("aaaBBB").getId());
+		assertEquals("aaaBBB", SourceId.ofId("aaaBBB ").getId());
+		assertEquals("aaaBBB", SourceId.ofId(" aaaBBB").getId());
+		assertEquals("aaaBBB", SourceId.ofId(" aaaBBB ").getId());
 	}
 
 	@Test
 	public void testFileNameCreation() throws Exception {
-		assertEquals("aaa.bbb.ccc", SourceId.ofPath("aaa/bbb/ccc").getId());
-		assertEquals("aaa.bbb.ccc", SourceId.ofPath("aaa/bbb/ccc.pdf").getId());
-		assertEquals("aaa.bbb.ccc", SourceId.ofPath("/aaa/bbb/ccc").getId());
-		assertEquals("aaa.bbb.ccc", SourceId.ofPath("/aaa/bbb/ccc.pdf").getId());
-		assertEquals("aaa.bbb.ccc", SourceId.ofPath("aaa\\bbb\\ccc").getId());
-		assertEquals("aaa.bbb.ccc", SourceId.ofPath("aaa\\bbb\\ccc.pdf").getId());
-		assertEquals("aaa.bbb.ccc", SourceId.ofPath("\\aaa\\bbb\\ccc").getId());
-		assertEquals("aaa.bbb.ccc", SourceId.ofPath("\\aaa\\bbb\\ccc.pdf").getId());
+		assertEquals("aaa.bbb.ccc", SourceId.ofResource("aaa/bbb/ccc").getId());
+		assertEquals("aaa.bbb.ccc", SourceId.ofResource("aaa/bbb/ccc.pdf").getId());
+		assertEquals("aaa.bbb.ccc", SourceId.ofResource("/aaa/bbb/ccc").getId());
+		assertEquals("aaa.bbb.ccc", SourceId.ofResource("/aaa/bbb/ccc.pdf").getId());
+		assertEquals("aaa.bbb.ccc", SourceId.ofResource("aaa\\bbb\\ccc").getId());
+		assertEquals("aaa.bbb.ccc", SourceId.ofResource("aaa\\bbb\\ccc.pdf").getId());
+		assertEquals("aaa.bbb.ccc", SourceId.ofResource("\\aaa\\bbb\\ccc").getId());
+		assertEquals("aaa.bbb.ccc", SourceId.ofResource("\\aaa\\bbb\\ccc.pdf").getId());
 	}
 
 	@Test
 	public void testEquality() throws Exception {
-		assertTrue(SourceId.of("aaa").equals(SourceId.of("aaa")));
-		assertFalse(SourceId.of("bbb").equals(SourceId.of("aaa")));
+		assertTrue(SourceId.ofId("aaa").equals(SourceId.ofId("aaa")));
+		assertFalse(SourceId.ofId("bbb").equals(SourceId.ofId("aaa")));
 	}
 
 	@Test
 	public void testHash() throws Exception {
-		assertTrue(SourceId.of("aaa").hashCode() == SourceId.of("aaa").hashCode());
-		assertFalse(SourceId.of("bbb").hashCode() == SourceId.of("aaa").hashCode());
+		assertTrue(SourceId.ofId("aaa").hashCode() == SourceId.ofId("aaa").hashCode());
+		assertFalse(SourceId.ofId("bbb").hashCode() == SourceId.ofId("aaa").hashCode());
 	}
 
 }

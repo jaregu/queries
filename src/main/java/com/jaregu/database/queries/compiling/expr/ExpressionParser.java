@@ -1,5 +1,7 @@
 package com.jaregu.database.queries.compiling.expr;
 
+import java.util.List;
+
 public interface ExpressionParser {
 
 	/**
@@ -11,5 +13,5 @@ public interface ExpressionParser {
 	 */
 	boolean isLikeExpression(String expression);
 
-	Expression parse(String expression) throws ExpressionParseException;
+	List<Expression> parse(String expression) throws ExpressionParseException;
 }

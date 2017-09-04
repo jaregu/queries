@@ -12,59 +12,60 @@ public class ConstantDecimal extends ConstantBaseImpl<BigDecimal> {
 	}
 
 	@Override
-	public Object multiply(Object object) {
-		return withNumber(object, super::multiply, (v, o) -> v.multiply(o));
+	public Object multiply(Operand operand) {
+		return withNumber(operand, super::multiply, (v, o) -> v.multiply(o));
 	}
 
 	@Override
-	public Object divide(Object object) {
-		return withNumber(object, super::divide, (v, o) -> v.divide(o));
+	public Object divide(Operand operand) {
+		return withNumber(operand, super::divide, (v, o) -> v.divide(o));
 	}
 
 	@Override
-	public Object add(Object object) {
-		return withNumber(object, super::add, (v, o) -> v.add(o));
+	public Object add(Operand operand) {
+		return withNumber(operand, super::add, (v, o) -> v.add(o));
 	}
 
 	@Override
-	public Object subtract(Object object) {
-		return withNumber(object, super::subtract, (v, o) -> v.subtract(o));
+	public Object subtract(Operand operand) {
+		return withNumber(operand, super::subtract, (v, o) -> v.subtract(o));
 	}
 
 	@Override
-	public boolean greater(Object object) {
-		return withNumber(object, super::greater, (v, o) -> v.compareTo(o) > 0);
+	public boolean greater(Operand operand) {
+		return withNumber(operand, super::greater, (v, o) -> v.compareTo(o) > 0);
 	}
 
 	@Override
-	public boolean greaterOrEqual(Object object) {
-		return withNumber(object, super::greaterOrEqual, (v, o) -> v.compareTo(o) >= 0);
+	public boolean greaterOrEqual(Operand operand) {
+		return withNumber(operand, super::greaterOrEqual, (v, o) -> v.compareTo(o) >= 0);
 	}
 
 	@Override
-	public boolean lesser(Object object) {
-		return withNumber(object, super::lesser, (v, o) -> v.compareTo(o) < 0);
+	public boolean lesser(Operand operand) {
+		return withNumber(operand, super::lesser, (v, o) -> v.compareTo(o) < 0);
 	}
 
 	@Override
-	public boolean lesserOrEqual(Object object) {
-		return withNumber(object, super::lesserOrEqual, (v, o) -> v.compareTo(o) <= 0);
+	public boolean lesserOrEqual(Operand operand) {
+		return withNumber(operand, super::lesserOrEqual, (v, o) -> v.compareTo(o) <= 0);
 	}
 
 	@Override
-	public boolean equal(Object object) {
-		return withNumber(object, super::lesserOrEqual, (v, o) -> v.compareTo(o) == 0);
+	public boolean equal(Operand operand) {
+		return withNumber(operand, super::equal, (v, o) -> v.compareTo(o) == 0);
 	}
 
 	@Override
-	public boolean notEqual(Object object) {
-		return withNumber(object, super::lesserOrEqual, (v, o) -> v.compareTo(o) != 0);
+	public boolean notEqual(Operand operand) {
+		return withNumber(operand, super::notEqual, (v, o) -> v.compareTo(o) != 0);
 	}
 
-	private <T> T withNumber(Object operand, Function<Object, T> defaultCall,
+	private <T> T withNumber(Operand operand, Function<Operand, T> defaultCall,
 			BiFunction<BigDecimal, BigDecimal, T> function) {
-		if (operand != null && operand instanceof Number) {
-			return function.apply(getValue(), new BigDecimal(((Number) operand).toString()));
+		Object otherValue = operand.getValue();
+		if (otherValue != null && otherValue instanceof Number) {
+			return function.apply(getValue(), new BigDecimal(((Number) otherValue).toString()));
 		} else {
 			return defaultCall.apply(operand);
 		}

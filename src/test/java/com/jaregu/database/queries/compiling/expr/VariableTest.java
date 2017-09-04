@@ -12,11 +12,11 @@ public class VariableTest {
 
 	@Test
 	public void testVariableParse() {
-		assertTrue(Variable.parse(".aaa").get() instanceof Variable);
-		assertEquals("aaa", Variable.parse(".aaa").get().getName());
+		assertTrue(Variable.parse(":aaa").get() instanceof Variable);
+		assertEquals("aaa", Variable.parse(":aaa").get().getName());
 
-		assertTrue(Variable.parse(".aaa.bbb").get() instanceof Variable);
-		assertEquals("aaa.bbb", Variable.parse(".aaa.bbb").get().getName());
+		assertTrue(Variable.parse(":aaa.bbb").get() instanceof Variable);
+		assertEquals("aaa.bbb", Variable.parse(":aaa.bbb").get().getName());
 	}
 
 	@Test
@@ -30,19 +30,19 @@ public class VariableTest {
 	@Test
 	public void testParseException() {
 		try {
-			Variable.parse(".asdasd.");
+			Variable.parse(":asdasd.");
 			fail();
 		} catch (ExpressionParseException e) {
 		}
 
 		try {
-			Variable.parse(".asdasd..aaa");
+			Variable.parse(":asdasd..aaa");
 			fail();
 		} catch (ExpressionParseException e) {
 		}
 
 		try {
-			Variable.parse("..aasdasd");
+			Variable.parse(":.aasdasd");
 			fail();
 		} catch (ExpressionParseException e) {
 		}

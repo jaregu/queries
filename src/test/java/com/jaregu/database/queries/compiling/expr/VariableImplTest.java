@@ -9,7 +9,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import com.jaregu.database.queries.building.ParamsResolver;
+import com.jaregu.database.queries.building.NamedResolver;
+import com.jaregu.database.queries.building.ParametersResolver;
 
 @RunWith(MockitoJUnitRunner.class)
 public class VariableImplTest {
@@ -17,13 +18,17 @@ public class VariableImplTest {
 	private VariableImpl impl = new VariableImpl("someName");
 
 	@Mock
-	private ParamsResolver variableResolver;
+	private ParametersResolver variableResolver;
+
+	@Mock
+	private NamedResolver namedResolver;
 
 	private EvaluationContext context;
 
 	@Before
 	public void setUp() {
 		context = EvaluationContext.forVariableResolver(variableResolver).build();
+		when(variableResolver.getNamedResolver()).thenReturn(namedResolver);
 	}
 
 	@Test
@@ -38,7 +43,7 @@ public class VariableImplTest {
 
 	@Test
 	public void testEvaluation() {
-		when(variableResolver.getValue("someName")).thenReturn("someValue");
+		when(namedResolver.getValue("someName")).thenReturn("someValue");
 		String result = (String) EvaluationContext.withContext(context, () -> {
 			return impl.getValue();
 		});

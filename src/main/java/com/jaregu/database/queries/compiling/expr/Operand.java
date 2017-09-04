@@ -8,27 +8,27 @@ public interface Operand {
 
 	List<String> getVariableNames();
 
-	Object multiply(Object object);
+	Object multiply(Operand object);
 
-	Object divide(Object object);
+	Object divide(Operand object);
 
-	Object add(Object object);
+	Object add(Operand object);
 
-	Object subtract(Object object);
+	Object subtract(Operand object);
 
-	boolean greater(Object object);
+	boolean greater(Operand object);
 
-	boolean greaterOrEqual(Object object);
+	boolean greaterOrEqual(Operand object);
 
-	boolean lesser(Object object);
+	boolean lesser(Operand object);
 
-	boolean lesserOrEqual(Object object);
+	boolean lesserOrEqual(Operand object);
 
-	boolean equal(Object object);
+	boolean equal(Operand object);
 
-	boolean notEqual(Object object);
+	boolean notEqual(Operand object);
 
-	boolean and(Object object);
+	boolean and(Operand object);
 
-	boolean or(Object object);
+	boolean or(Operand object);
 }

@@ -1,31 +1,42 @@
 package com.jaregu.database.queries.compiling.expr;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import com.jaregu.database.queries.building.ParamsResolver;
+import com.jaregu.database.queries.building.ParametersResolver;
 
 final class EvaluationContext {
 
 	private static final ThreadLocal<EvaluationContext> currentContext = new ThreadLocal<>();
 
-	private ParamsResolver variableResolver;
+	private ParametersResolver variableResolver;
 	private Optional<Expression> baseExpression;
+	private Map<String, Object> outputVariables;
 
-	public static Builder forVariableResolver(ParamsResolver variableResolver) {
+	public static Builder forVariableResolver(ParametersResolver variableResolver) {
 		return new Builder(variableResolver);
 	}
 
-	private EvaluationContext(ParamsResolver variableResolver) {
+	private EvaluationContext(ParametersResolver variableResolver) {
 		this.variableResolver = variableResolver;
 	}
 
-	public ParamsResolver getVariableResolver() {
+	public ParametersResolver getVariableResolver() {
 		return variableResolver;
 	}
 
 	public Optional<Expression> getBaseExpression() {
 		return baseExpression;
+	}
+
+	public Map<String, Object> getOutputVariables() {
+		return outputVariables != null ? Collections.unmodifiableMap(outputVariables) : Collections.emptyMap();
+	}
+
+	public void setOutputVariable(String name, Object value) {
+		outputVariables.put(name, value);
 	}
 
 	public <T> T withContext(Supplier<T> work) {
@@ -55,7 +66,7 @@ final class EvaluationContext {
 
 		private EvaluationContext context;
 
-		private Builder(ParamsResolver variableResolver) {
+		private Builder(ParametersResolver variableResolver) {
 			context = new EvaluationContext(variableResolver);
 		}
 

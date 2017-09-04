@@ -13,7 +13,7 @@ public enum CommentType {
 	 * </pre>
 	 * 
 	 */
-	HYPHENS("--", "\n", false),
+	HYPHENS("--", "\r\n", false),
 
 	/**
 	 * SQL comment starting with slash and asterisk, ends with asterisk and
