@@ -3,7 +3,7 @@ package com.jaregu.database.queries.compiling.expr;
 @SuppressWarnings("serial")
 public class ExpressionEvalException extends ExpressionException {
 
-	final private String expression = EvaluationContext.peekCurrent().map(EvaluationContext::getBaseExpression)
+	final private String expression = EvaluationContext.peekCurrent().flatMap(EvaluationContext::getBaseExpression)
 			.map(Object::toString).orElse(null);
 
 	public ExpressionEvalException(Throwable cause) {

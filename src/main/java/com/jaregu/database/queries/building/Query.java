@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public interface BuildtQuery {
+public interface Query {
 
 	String getSql();
 
@@ -13,7 +13,7 @@ public interface BuildtQuery {
 
 	Map<String, Object> getAttributes();
 
-	<T> T map(Function<BuildtQuery, T> mapper);
+	<T> T map(Function<Query, T> mapper);
 
-	Stream<BuildtQuery> stream();
+	Stream<Query> stream();
 }

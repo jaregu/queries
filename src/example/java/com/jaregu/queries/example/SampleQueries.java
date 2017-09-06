@@ -15,7 +15,7 @@ import org.junit.Test;
 
 import com.jaregu.database.queries.Queries;
 import com.jaregu.database.queries.RetativeQueries;
-import com.jaregu.database.queries.building.BuildtQuery;
+import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.compiling.PreparedQuery;
 import com.jaregu.database.queries.parsing.QueriesSource;
 
@@ -102,12 +102,12 @@ public class SampleQueries {
 
 		// it is possible to build multiple times with different parameters one
 		// prepared query
-		BuildtQuery query = preparedQuery.build("foo", 5, "bar", "2-5");
+		Query query = preparedQuery.build("foo", 5, "bar", "2-5");
 		assertThat(query.getSql()).containsSequence("and foo = ?").containsSequence("and (bar = ?");
 		List<Dummy> rows = db.findAll(Dummy.class, toQuery(query));
 		assertThat(rows).extracting("foo", "bar").containsOnly(tuple(5, "2-5"));
 
-		BuildtQuery query2 = preparedQuery.build("foo", null, "bar", "3-6");
+		Query query2 = preparedQuery.build("foo", null, "bar", "3-6");
 		assertThat(query2.getSql()).doesNotContain("and foo = ?").containsSequence("and (bar = ?");
 		List<Dummy> rows2 = db.findAll(Dummy.class, toQuery(query2));
 		assertThat(rows2).extracting("foo", "bar").containsOnly(tuple(6, "3-6"));
@@ -115,7 +115,7 @@ public class SampleQueries {
 
 	@Test
 	public void inClauseCollectionSupport() {
-		BuildtQuery query = rq.get("in-clause-support").build("collectionOfIds", Arrays.asList(1, 3));
+		Query query = rq.get("in-clause-support").build("collectionOfIds", Arrays.asList(1, 3));
 		assertThat(query.getSql()).containsSequence("where id IN (?, ?");
 		List<Dummy> rows = db.findAll(Dummy.class, toQuery(query));
 		assertThat(rows).extracting("id", "bar").containsOnly(tuple(1, "1-4"), tuple(3, "3-6"));
@@ -126,24 +126,24 @@ public class SampleQueries {
 		// and foo > ? -- :foo + 1; :foo != null && :foo > 3
 		PreparedQuery preparedQuery = rq.get("named-conditional-criterion-parameters");
 
-		BuildtQuery query = preparedQuery.build("foo", 4);
+		Query query = preparedQuery.build("foo", 4);
 		assertThat(query.getSql()).containsSequence("and foo > ?");
 		// should be only one row with foo greater than 5
 		List<Integer> ids = db.findAll(Integer.class, toQuery(query));
 		assertThat(ids).containsExactly(3);
 
-		BuildtQuery query2 = preparedQuery.build("foo", null);
+		Query query2 = preparedQuery.build("foo", null);
 		assertThat(query2.getSql()).doesNotContain("and foo > ?");
 		List<Integer> ids2 = db.findAll(Integer.class, toQuery(query2));
 		assertThat(ids2).containsExactly(1, 2, 3);
 
-		BuildtQuery query3 = preparedQuery.build("foo", 3);
+		Query query3 = preparedQuery.build("foo", 3);
 		assertThat(query3.getSql()).doesNotContain("and foo > ?");
 		List<Integer> ids3 = db.findAll(Integer.class, toQuery(query3));
 		assertThat(ids3).containsExactly(1, 2, 3);
 	}
 
-	private SqlQuery toQuery(BuildtQuery q) {
+	private SqlQuery toQuery(Query q) {
 		return SqlQuery.query(q.getSql(), q.getParameters());
 	}
 

@@ -65,4 +65,19 @@ public abstract class EvaluableOperand implements Operand {
 	public boolean or(Operand object) {
 		return getValueConstant().or(object);
 	}
+
+	@Override
+	public boolean not() {
+		return getValueConstant().not();
+	}
+
+	@Override
+	public Object ternary(Operand first, Operand second) {
+		return getValueConstant().ternary(first, second);
+	}
+
+	@Override
+	public Object assign(Operand object) {
+		return getValueConstant().assign(object);
+	}
 }

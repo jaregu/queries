@@ -5,9 +5,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,20 +23,19 @@ public class ExpressionParserImpl implements ExpressionParser {
 
 	private final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-	private static final List<Separator> SEPARATORS = getSeparators();
-
-	private static final LexerPattern OPERAND = Lexer.newPattern().skipAllBetween("'", "'")
-			.stopBefore(Lexer.whitespace())
-			.stopBeforeAnyOf(SEPARATORS.stream().map(Separator::getSequence).toArray(String[]::new)).stopAtEof();
+	private static final LexerPattern OPERAND = Lexer
+			.newPattern().skipAllBetween("'", "'").stopBefore(Lexer.whitespace()).stopBeforeAnyOf(OperatorType
+					.getOperators().stream().map(Operator::getSequences).flatMap(List::stream).toArray(String[]::new))
+			.stopAtEof();
 	private static final LexerPattern WHITESPACE = Lexer.newPattern().stopAfter(Lexer.whitespace()).stopAtEof();
 
 	@Override
 	public boolean isLikeExpression(String expression) {
-		Parts parts = split(expression);
+		SplitParts parts = split(expression);
 		// if there is no two sequential sequences - lets answer that this is
 		// expression
-		Part lastPart = null;
-		for (Part part : parts) {
+		SplitPart lastPart = null;
+		for (SplitPart part : parts) {
 			if (lastPart != null && lastPart.isSequence() && part.isSequence()) {
 				return false;
 			}
@@ -45,32 +48,25 @@ public class ExpressionParserImpl implements ExpressionParser {
 	public List<Expression> parse(String expression) throws ExpressionParseException {
 		return ParsingContext.forExpression(expression).build().withContext(() -> {
 			logger.trace("Parsing expression (0): {}", expression);
-			Parts parts = split(expression);
+			SplitParts parts = split(expression);
 			logger.trace("Parsing expression (1) after splitting: {}", parts);
-			List<Parts> expressions = getExpressionParts(parts);
-			logger.trace("Parsing expression (2) after expression parts: {}", expressions);
-			List<ExpressionBlock> result = new ArrayList<>(expressions.size());
-			for (Parts expressionPart : expressions) {
-				Parts hierarchical = getHierarchical(expressionPart);
-				logger.trace("Parsing expression (3) after creating block: {}", parts);
-				Operand operand = getOperands(hierarchical);
-				logger.trace("Parsing expression (4) after compiling: {}", operand);
-				result.add(new ExpressionBlockImpl(operand));
-			}
-			return result.stream().map(ExpressionImpl::new).collect(Collectors.toList());
+			List<Operand> operands = parse(parts);
+			logger.trace("Parsing expression (2) after parsing: {}", operands);
+			return operands.stream().map(ExpressionImpl::new).collect(Collectors.toList());
 		});
 	}
 
-	private Parts split(String expression) {
-		List<Part> parts = new ArrayList<>();
+	private SplitParts split(String expression) {
+		Set<Entry<String, Operator>> operators = OperatorType.getOperatorsBySequence().entrySet();
+		List<SplitPart> parts = new ArrayList<>();
 		Lexer lx = new Lexer(expression);
 		boolean found;
 		while (lx.hasMore()) {
 			found = false;
-			for (Separator separator : SEPARATORS) {
-				if (lx.lookingAt(separator.getSequence())) {
-					lx.expect(separator.getSequence());
-					parts.add(new Part(separator));
+			for (Entry<String, Operator> operatorEntry : operators) {
+				if (lx.lookingAt(operatorEntry.getKey())) {
+					lx.expect(operatorEntry.getKey());
+					parts.add(new SplitPart(operatorEntry.getKey(), operatorEntry.getValue()));
 					found = true;
 					break;
 				}
@@ -78,7 +74,7 @@ public class ExpressionParserImpl implements ExpressionParser {
 			if (!found) {
 				String chunk = lx.read(OPERAND);
 				if (chunk != null) {
-					parts.add(new Part(chunk));
+					parts.add(new SplitPart(chunk));
 				} else if (lx.lookingAt(Lexer.whitespace())) {
 					lx.read(WHITESPACE);
 				} else {
@@ -87,266 +83,310 @@ public class ExpressionParserImpl implements ExpressionParser {
 			}
 
 		}
-		return new Parts(parts);
+		return new SplitParts(parts);
 	}
 
-	/*
-	 * Splits expression into multiple expressions expr1[;expr2]...
-	 * 
-	 * @param parts
-	 * 
-	 * @return
-	 */
-	private List<Parts> getExpressionParts(Parts parts) {
-		List<Parts> expressionParts = new LinkedList<>();
-		int index = 0;
-		for (int i = 0; i < parts.size(); i++) {
-			Part part = parts.get(i);
-			if (part.isSeparator() && part.getSeparator() == ExpressionSeparator.SEMICOLON) {
-				if (i - index > 0) {
-					expressionParts.add(parts.subParts(index, i));
-					index = i + 1;
-				}
-			}
-		}
-		if (index < parts.size()) {
-			expressionParts.add(parts.subParts(index, parts.size()));
-		}
-		return expressionParts;
+	private List<Operand> parse(SplitParts parts) {
+		return parseParts(parts).stream().map(p -> toOperand(p)).collect(Collectors.toList());
 	}
 
-	/*
-	 * Splits flat part list to hierarchical list using existing brackets. Like
-	 * a - ( b + c) -> a - block(b + c)
-	 * 
-	 * @param parts
-	 * 
-	 * @return
-	 */
-	private Parts getHierarchical(Parts parts) {
-		List<Part> hierarchical = new ArrayList<>(parts.size());
-		int bracketCount = 0;
-		int bracketStartIndex = 0;
-		for (int i = 0; i < parts.size(); i++) {
-			Part part = parts.get(i);
-			if (part.isSeparator() && part.getSeparator() == BlockSymbol.START) {
-				if (bracketCount == 0) {
-					bracketStartIndex = i + 1;
-				}
-				bracketCount++;
-			}
-			if (part.isSeparator() && part.getSeparator() == BlockSymbol.END) {
-				if (bracketCount == 0) {
-					throw new ExpressionParseException(
-							"Can't parse expression, there is one closing bracket when there was no opening one in block: "
-									+ parts + "!");
-				}
-				bracketCount--;
-				if (bracketCount == 0) {
-					if (bracketStartIndex == i) {
-						throw new ExpressionParseException(
-								"Can't parse expression, there is one opening bracket followed with closing one in block: "
-										+ parts + "!");
+	private SplitParts parseParts(SplitParts parts) {
+		Map<Integer, List<Operator>> operatorsByPrecedance = OperatorType.getOperatorsByPrecedence();
+		for (List<Operator> operators : operatorsByPrecedance.values()) {
+
+			int delta = 0;
+			do {
+				SplitParts updatedParts = parseOperators(parts, operators);
+				delta = parts.size() - updatedParts.size();
+				parts = updatedParts;
+			} while (delta > 0);
+		}
+		return parts;
+	}
+
+	private SplitParts parseOperators(SplitParts parts, List<Operator> operators) {
+		boolean rightToLeft = operators.get(0).getAssociativity() == AssociativityType.RIGHT_TO_LEFT;
+		int delta = rightToLeft ? -1 : 1;
+		for (int i = rightToLeft ? parts.size() - 1 : 0; rightToLeft ? i >= 0 : i < parts.size(); i = i + delta) {
+			SplitPart part = parts.get(i);
+			if (part.isOperator()) {
+
+				for (Operator operator : operators) {
+					if (operator == part.getOperator()) {
+
+						// special case - processing is doing operator
+						// first of all if operator has more than one sequence,
+						// we have to match first one from right end
+						if (!operator.getSequences().get(rightToLeft ? operator.getSequences().size() - 1 : 0)
+								.equals(part.getSequence())) {
+							throw new ExpressionParseException(
+									"Can't parse expression, there is wrong character sequence starting " + operator
+											+ " operator! In expression part: " + parts + "!");
+
+						}
+
+						if (operator.isNullary()) {
+							if (operator == OperatorType.EXPRESSION_SEPARATOR) {
+								return parseExpressionParts(parts, i);
+							} else if (operator == OperatorType.BLOCK) {
+								return parseBlockParts(parts, i);
+							} else {
+								throw new ExpressionParseException("Can't parse expression, unknown nullary " + operator
+										+ " operator! In expression part: " + parts + "!");
+							}
+
+						} else if (operator.isUnary()) {
+							int operandIndex = i - delta;
+							if (!parts.isInBounds(operandIndex)) {
+								throw new ExpressionParseException("Can't parse expression, unary " + operator
+										+ " operator has no operand! Expression part: " + parts + "!");
+							} else {
+								int from = rightToLeft ? i : i - 1;
+								int to = rightToLeft ? i + 2 : i + 1;
+								return parts.substitute(from, to,
+										new SplitPart(new UnaryOperand(operator, toOperand(parts.get(operandIndex)))));
+							}
+
+						} else if (operator.isBinary()) {
+							int leftOperandIndex = i - 1;
+							int rightOperandIndex = i + 1;
+							if (!parts.isInBounds(leftOperandIndex) || !parts.isInBounds(rightOperandIndex)) {
+								throw new ExpressionParseException("Can't parse expression, binary " + operator
+										+ " operator has one or none operands! Expression part: " + parts + "!");
+							} else {
+								return parts.substitute(i - 1, i + 2,
+										new SplitPart(
+												new BinaryOperand(operator, toOperand(parts.get(leftOperandIndex)),
+														toOperand(parts.get(rightOperandIndex)))));
+							}
+						} else if (operator.isTernary()) {
+							int from = rightToLeft ? i - 3 : i - 1;
+							int to = from + 5;
+							if (!parts.isInBounds(from) || !parts.isInBounds(to - 1)) {
+								throw new ExpressionParseException("Can't parse expression, ternary (" + operator
+										+ ") operator have not all operands! Expression part: " + parts + "!");
+							} else if (!parts.get(from + 1).isOperator()
+									|| parts.get(from + 1).getOperator() != operator
+									|| !parts.get(from + 3).isOperator()
+									|| parts.get(from + 3).getOperator() != operator) {
+								throw new ExpressionParseException("Can't parse expression, ternary (" + operator
+										+ ") operator have not all operators correctly! Expression part: " + parts
+										+ "!");
+							} else if (operator.getSequences().size() > 1 && (!operator.getSequences().get(0)
+									.equals(parts.get(from + 1).getSequence())
+									|| !operator.getSequences().get(1).equals(parts.get(from + 3).getSequence()))) {
+								throw new ExpressionParseException("Can't parse expression, ternary (" + operator
+										+ ") operator have not all operator symbols in order! Expression part: " + parts
+										+ "!");
+							} else {
+								return parts.substitute(from, to,
+										new SplitPart(new TernaryOperand(operator, toOperand(parts.get(from)),
+												toOperand(parts.get(from + 2)), toOperand(parts.get(from + 4)))));
+							}
+						}
 					}
-					hierarchical.add(new Part(getHierarchical(parts.subParts(bracketStartIndex, i))));
-					bracketStartIndex = i + 1;
 				}
-
-			} else if (bracketCount == 0) {
-				hierarchical.add(part);
 			}
 		}
-		return new Parts(hierarchical);
+		return parts;
 	}
 
-	/*
-	 * Splits everything as operand and operation blocks consisting of tree
-	 * elements using operation precedence.
-	 */
-	private Operand getOperands(Parts parts) {
-		if (parts.size() == 1) {
-			return toOperand(parts.get(0));
-		} else if (parts.size() % 2 == 0) {
-			throw new ExpressionParseException(
-					"Can't parse expression, there is one operand missing in block: " + parts + "!");
-		} else if (parts.size() == 3) {
-			if (!parts.get(1).isSeparator()) {
-				throw new ExpressionParseException(
-						"Can't parse expression, there is error in block with operation sequence: " + parts + "!");
-			}
-			Operand first = toOperand(parts.get(0));
-			OperationType operation = (OperationType) parts.get(1).getSeparator();
-			Operand second = toOperand(parts.get(2));
+	private SplitParts parseExpressionParts(SplitParts parts, int index) {
+		SplitParts firstPart = parseParts(parts.subParts(0, index));
+		SplitParts secondParts = null;
+		if (index + 1 < parts.size()) {
+			secondParts = parseParts(parts.subParts(index + 1, parts.size()));
+		}
+		return new SplitParts(firstPart, secondParts);
+	}
 
-			return new ExpressionBlockImpl(first, operation, second);
+	private SplitParts parseBlockParts(SplitParts parts, int index) {
+		String startSymbol = OperatorType.BLOCK.getSequences().get(0);
+		String endSymbol = OperatorType.BLOCK.getSequences().get(1);
+
+		if (index + 1 < parts.size()) {
+			int bracketCount = 1;
+			int endIndex;
+			for (endIndex = index + 1; endIndex < parts.size(); endIndex++) {
+				SplitPart part = parts.get(endIndex);
+				if (part.isOperator() && part.getOperator() == OperatorType.BLOCK) {
+					if (startSymbol.equals(part.getSequence())) {
+						bracketCount++;
+					} else if (endSymbol.equals(part.getSequence())) {
+						if (endIndex == index + 1) {
+							throw new ExpressionParseException(
+									"Can't parse expression, there is one opening bracket followed with closing one in block: "
+											+ parts + "!");
+						}
+						bracketCount--;
+						if (bracketCount == 0) {
+							break;
+						}
+					}
+				}
+			}
+			if (bracketCount > 0) {
+				throw new ExpressionParseException(
+						"Can't parse expression, there is no closing bracket in expression " + parts + "!");
+			}
+
+			SplitParts beforePart = parts.subParts(0, index);
+			SplitParts parsedParts = parseParts(parts.subParts(index + 1, endIndex));
+			SplitParts afterParts = null;
+			if (endIndex + 1 < parts.size()) {
+				afterParts = parts.subParts(endIndex + 1, parts.size());
+			}
+			return new SplitParts(beforePart, parsedParts, afterParts);
 		} else {
-
-			int index = -1;
-			int precedence = -1;
-			for (int i = 0; i < parts.size(); i++) {
-				Part part = parts.get(i);
-				if (part.isSeparator()) {
-					if ((i + 1) % 2 != 0) {
-						throw new ExpressionParseException(
-								"Can't parse expression, there is error with operation sequences part index: " + i
-										+ " parts: " + parts + "!");
-					}
-					OperationType operation = (OperationType) part.getSeparator();
-					if (precedence < 0 || operation.getPrecedence() < precedence) {
-						index = i;
-						precedence = operation.getPrecedence();
-					}
-				}
-			}
-
-			if (index < 0) {
-				throw new ExpressionParseException(
-						"Can't parse expression, there is no operators in block: " + parts + "!");
-			} else if (index + 2 > parts.size()) {
-				throw new ExpressionParseException(
-						"Can't parse expression, expression ends with operator: " + parts + "!");
-			}
-
-			List<Part> replacedParts = new ArrayList<>(parts.size());
-			replacedParts.addAll(parts.subParts(0, index - 1).getParts());
-			replacedParts.add(new Part(getOperands(parts.subParts(index - 1, index + 2))));
-			replacedParts.addAll(parts.subParts(index + 2, parts.size()).getParts());
-
-			return getOperands(new Parts(replacedParts));
+			throw new ExpressionParseException(
+					"Can't parse expression, there is no closing bracket in expression " + parts + "!");
 		}
 	}
 
-	public Operand toOperand(Part part) {
+	public Operand toOperand(SplitPart part) {
 		if (part.isOperand()) {
 			return part.getOperand();
-		} else if (part.hasChildren()) {
-			return getOperands(part.getChildren());
 		} else if (part.isSequence()) {
+			Optional.empty();
 			return (Constant.parse(part.getSequence())).map(c -> (Operand) c)
-					.orElseGet(() -> Variable.parse(part.getSequence()).orElseThrow(() -> new ExpressionParseException(
-							"Can't parse expression, unknown character sequence: " + this + "!")));
+					.orElseGet(() -> Variable.parse(part.getSequence()).map(c -> (Operand) c)
+							.orElseGet(() -> OutputVariable.parse(part.getSequence())
+									.orElseThrow(() -> new ExpressionParseException(
+											"Can't parse expression, unknown character sequence: " + part + "!")))
 
+			);
+		} else if (part.isOperator()) {
+			throw new ExpressionParseException(
+					"Can't cast operator as operand, expected operand but got operator: " + part + "!");
 		} else {
-			throw new ExpressionParseException("Can't parse expression as operand, not operand: " + this + "!");
+			throw new ExpressionParseException("Can't parse expression as operand, not operand: " + part + "!");
 		}
 	}
 
-	private static List<Separator> getSeparators() {
-		List<Separator> separators = new ArrayList<>(OperationType.values().length + BlockSymbol.values().length);
-		separators.addAll(Arrays.asList(OperationType.values()));
-		separators.addAll(Arrays.asList(BlockSymbol.values()));
-		separators.addAll(Arrays.asList(ExpressionSeparator.values()));
-		// sort separators using their length in reverse order, to match longest
-		// separators first,
-		// because longest can contain shortest ones
-		Collections.sort(separators, (s1, s2) -> {
-			return Integer.compare(s2.getSequence().length(), s1.getSequence().length());
-		});
-		return separators.stream().collect(Collectors.toList());
-	}
+	private static class SplitParts implements Iterable<SplitPart> {
 
-	private static class Parts implements Iterable<Part> {
+		private List<SplitPart> parts;
 
-		private List<Part> parts;
-
-		public Parts(List<Part> parts) {
+		public SplitParts(List<SplitPart> parts) {
 			this.parts = parts;
 		}
 
-		public Part get(int index) {
+		public SplitParts(SplitParts... parts) {
+			this.parts = Arrays.asList(parts).stream().filter(p -> p != null).map(p -> p.parts).flatMap(List::stream)
+					.collect(Collectors.toList());
+		}
+
+		public SplitParts substitute(int from, int to, SplitPart substitute) {
+			return substitute(from, to, Collections.singletonList(substitute));
+		}
+
+		@SuppressWarnings("unused")
+		public SplitParts substitute(int from, int to, SplitParts substitute) {
+			return substitute(from, to, substitute.parts);
+		}
+
+		private SplitParts substitute(int from, int to, List<SplitPart> substitute) {
+			List<SplitPart> substituted = new ArrayList<>(parts.size());
+			if (from > 0) {
+				substituted.addAll(parts.subList(0, from));
+			}
+			substituted.addAll(substitute);
+			if (to < parts.size()) {
+				substituted.addAll(parts.subList(to, parts.size()));
+			}
+			return new SplitParts(substituted);
+		}
+
+		public SplitPart get(int index) {
 			return this.parts.get(index);
 		}
 
-		public List<Part> getParts() {
-			return parts;
-		}
-
-		public Parts subParts(int start, int end) {
-			return new Parts(parts.subList(start, end));
+		public SplitParts subParts(int start, int end) {
+			return new SplitParts(parts.subList(start, end));
 		}
 
 		public int size() {
 			return parts.size();
 		}
 
+		public boolean isInBounds(int index) {
+			return index >= 0 && index < parts.size();
+		}
+
 		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
-			for (Part part : parts) {
-				if (sb.length() > 0) {
-					sb.append("|");
+			Iterator<SplitPart> iter = parts.iterator();
+			if (iter.hasNext()) {
+				sb.append(iter.next());
+				while (iter.hasNext()) {
+					sb.append(" ").append(iter.next());
 				}
-				sb.append(part);
 			}
 			return sb.toString();
 		}
 
 		@Override
-		public Iterator<Part> iterator() {
+		public Iterator<SplitPart> iterator() {
 			return parts.iterator();
+		}
+
+		public Stream<SplitPart> stream() {
+			return parts.stream();
 		}
 	}
 
-	private static class Part {
+	private static class SplitPart {
 
-		private Separator separator;
-		private String sequence;
-		private Parts children;
-		private Operand operand;
+		private final Optional<String> sequence;
+		private final Optional<Operator> operator;
+		private final Optional<Operand> operand;
 
-		public Part(Separator separator) {
-			this.separator = separator;
+		public SplitPart(String sequence, Operator operator) {
+			this.sequence = Optional.of(sequence);
+			this.operator = Optional.of(operator);
+			this.operand = Optional.empty();
 		}
 
-		public Part(String sequence) {
-			this.sequence = sequence;
+		public SplitPart(String sequence) {
+			this.sequence = Optional.of(sequence);
+			this.operator = Optional.empty();
+			this.operand = Optional.empty();
 		}
 
-		public Part(Parts children) {
-			this.children = children;
-		}
-
-		public Part(Operand operand) {
-			this.operand = operand;
-		}
-
-		boolean isSeparator() {
-			return separator != null;
-		}
-
-		boolean isSequence() {
-			return sequence != null;
-		}
-
-		boolean isOperand() {
-			return operand != null;
-		}
-
-		boolean hasChildren() {
-			return children != null;
-		}
-
-		public Separator getSeparator() {
-			return separator;
+		public SplitPart(Operand operand) {
+			this.sequence = Optional.empty();
+			this.operator = Optional.empty();
+			this.operand = Optional.of(operand);
 		}
 
 		public String getSequence() {
-			return sequence;
+			return sequence.get();
+		}
+
+		public boolean isOperator() {
+			return operator.isPresent();
+		}
+
+		public boolean isSequence() {
+			return sequence.isPresent() && !operator.isPresent();
+		}
+
+		public boolean isOperand() {
+			return operand.isPresent();
+		}
+
+		public Operator getOperator() {
+			return operator.get();
 		}
 
 		public Operand getOperand() {
-			return operand;
-		}
-
-		public Parts getChildren() {
-			return children;
+			return operand.get();
 		}
 
 		@Override
 		public String toString() {
-			return separator != null ? separator.getSequence()
-					: (children != null ? "(" + children.toString() + ")"
-							: (operand != null ? operand.toString() : sequence));
+			return sequence.isPresent() ? sequence.get() : (operand.get().toString());
 		}
 	}
 }

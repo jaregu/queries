@@ -2,7 +2,10 @@ package com.jaregu.database.queries.compiling.expr;
 
 import java.util.Optional;
 
-public class ConstantString extends ConstantBaseImpl<String> {
+public final class ConstantString extends ConstantBaseImpl<String> {
+
+	final private static String SYMBOL = "'";
+	final private static String ESCAPE = "''";
 
 	public ConstantString(String value) {
 		super(value);
@@ -19,13 +22,13 @@ public class ConstantString extends ConstantBaseImpl<String> {
 	}
 
 	public static Optional<Constant> parse(String expression) {
-		if (expression.startsWith(StringSymbol.SYMBOL.getSequence())) {
-			if (!expression.endsWith(StringSymbol.SYMBOL.getSequence())) {
+		if (expression.startsWith(SYMBOL)) {
+			if (!expression.endsWith(SYMBOL)) {
 				throw new ExpressionParseException(
 						"Can't parse string constant expression, string is not closed: " + expression + "!");
 			}
-			return Optional.of(new ConstantString(expression.substring(1, expression.length() - 1)
-					.replace(StringSymbol.ESCAPE.getSequence(), StringSymbol.SYMBOL.getSequence())));
+			return Optional
+					.of(new ConstantString(expression.substring(1, expression.length() - 1).replace(ESCAPE, SYMBOL)));
 		} else {
 			return Optional.empty();
 		}

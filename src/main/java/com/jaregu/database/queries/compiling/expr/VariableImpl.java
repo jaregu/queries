@@ -3,7 +3,7 @@ package com.jaregu.database.queries.compiling.expr;
 import java.util.Collections;
 import java.util.List;
 
-public class VariableImpl extends EvaluableOperand implements Variable {
+public final class VariableImpl extends EvaluableOperand implements Variable {
 
 	final private String name;
 	private List<String> variableNames;

@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.jaregu.database.queries.QueryId;
-import com.jaregu.database.queries.building.BuildtQuery;
-import com.jaregu.database.queries.building.BuildtQueryImpl;
+import com.jaregu.database.queries.building.Query;
+import com.jaregu.database.queries.building.QueryImpl;
 import com.jaregu.database.queries.building.IteratorResolver;
 import com.jaregu.database.queries.building.NamedResolver;
 import com.jaregu.database.queries.building.ParametersResolver;
@@ -34,37 +34,37 @@ class PreparedQueryImpl implements PreparedQuery {
 	}
 
 	@Override
-	public BuildtQuery build() {
+	public Query build() {
 		return build(ParametersResolver.empty());
 	}
 
 	@Override
-	public BuildtQuery build(Object params) {
+	public Query build(Object params) {
 		return build(ParametersResolver.ofObject(params));
 	}
 
 	@Override
-	public BuildtQuery build(Map<String, Object> params) {
+	public Query build(Map<String, Object> params) {
 		return build(ParametersResolver.ofMap(params));
 	}
 
 	@Override
-	public BuildtQuery build(List<Object> params) {
+	public Query build(List<Object> params) {
 		return build(ParametersResolver.ofList(params));
 	}
 
 	@Override
-	public BuildtQuery build(Object... params) {
+	public Query build(Object... params) {
 		return build(Arrays.asList(params));
 	}
 
 	@Override
-	public BuildtQuery build(String k1, Object v1) {
+	public Query build(String k1, Object v1) {
 		return build(Collections.singletonMap(k1, v1));
 	}
 
 	@Override
-	public BuildtQuery build(String k1, Object v1, String k2, Object v2) {
+	public Query build(String k1, Object v1, String k2, Object v2) {
 		Map<String, Object> params = new HashMap<>();
 		params.put(k1, v1);
 		params.put(k2, v2);
@@ -72,7 +72,7 @@ class PreparedQueryImpl implements PreparedQuery {
 	}
 
 	@Override
-	public BuildtQuery build(String k1, Object v1, String k2, Object v2, String k3, Object v3) {
+	public Query build(String k1, Object v1, String k2, Object v2, String k3, Object v3) {
 		Map<String, Object> params = new HashMap<>();
 		params.put(k1, v1);
 		params.put(k2, v2);
@@ -81,22 +81,22 @@ class PreparedQueryImpl implements PreparedQuery {
 	}
 
 	@Override
-	public BuildtQuery build(NamedResolver resolver) {
+	public Query build(NamedResolver resolver) {
 		return build(ParametersResolver.ofNamedParameters(resolver));
 	}
 
 	@Override
-	public BuildtQuery build(IteratorResolver resolver) {
+	public Query build(IteratorResolver resolver) {
 		return build(ParametersResolver.ofIteratorParameters(resolver));
 	}
 
 	@Override
-	public BuildtQuery build(Iterable<Object> resolver) {
+	public Query build(Iterable<Object> resolver) {
 		return build(ParametersResolver.ofIterable(resolver));
 	}
 
 	@Override
-	public BuildtQuery build(ParametersResolver resolver) {
+	public Query build(ParametersResolver resolver) {
 		StringBuilder sql = new StringBuilder();
 		List<Object> allParameters = new LinkedList<>();
 		Map<String, Object> allAttributes = new HashMap<>();
@@ -106,6 +106,6 @@ class PreparedQueryImpl implements PreparedQuery {
 			allParameters.addAll(result.getParameters());
 			allAttributes.putAll(result.getAttributes());
 		}
-		return new BuildtQueryImpl(sql.toString(), allParameters, allAttributes);
+		return new QueryImpl(sql.toString(), allParameters, allAttributes);
 	}
 }

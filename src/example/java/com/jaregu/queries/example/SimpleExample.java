@@ -13,7 +13,7 @@ import org.dalesbred.Database;
 import com.jaregu.database.queries.Queries;
 import com.jaregu.database.queries.RetativeQueries;
 import com.jaregu.database.queries.SourceId;
-import com.jaregu.database.queries.building.BuildtQuery;
+import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.compiling.PreparedQuery;
 import com.jaregu.database.queries.parsing.QueriesSource;
 import com.zaxxer.hikari.HikariConfig;
@@ -118,7 +118,7 @@ public class SimpleExample {
 		paramsMap.put("id", 200);
 		paramsMap.put("firstName", "Will");
 		paramsMap.put("lastName", "Notcho");
-		BuildtQuery queryUsingMap = personInsert.build(paramsMap);
+		Query queryUsingMap = personInsert.build(paramsMap);
 		db.update(queryUsingMap.getSql(), queryUsingMap.getParameters().toArray());
 	}
 

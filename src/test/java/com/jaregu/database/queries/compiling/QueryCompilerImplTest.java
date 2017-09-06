@@ -21,7 +21,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import com.jaregu.database.queries.QueriesConfig;
 import com.jaregu.database.queries.QueryId;
-import com.jaregu.database.queries.building.BuildtQuery;
+import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Compiler;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Result;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Source;
@@ -92,7 +92,7 @@ public class QueryCompilerImplTest {
 	}
 
 	private String serve(PreparedQuery meal) {
-		BuildtQuery droppings = meal.build();
+		Query droppings = meal.build();
 		return droppings.getSql().toString();
 	}
 

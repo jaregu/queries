@@ -6,13 +6,13 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public class BuildtQueryImpl implements BuildtQuery {
+public class QueryImpl implements Query {
 
 	private String sql;
 	private List<Object> parameters;
 	private Map<String, Object> attributes;
 
-	public BuildtQueryImpl(String sql, List<Object> parameters, Map<String, Object> attributes) {
+	public QueryImpl(String sql, List<Object> parameters, Map<String, Object> attributes) {
 		this.sql = sql;
 		this.parameters = Collections.unmodifiableList(parameters);
 		this.attributes = Collections.unmodifiableMap(attributes);
@@ -29,12 +29,12 @@ public class BuildtQueryImpl implements BuildtQuery {
 	}
 
 	@Override
-	public <T> T map(Function<BuildtQuery, T> mapper) {
+	public <T> T map(Function<Query, T> mapper) {
 		return mapper.apply(this);
 	}
 
 	@Override
-	public Stream<BuildtQuery> stream() {
+	public Stream<Query> stream() {
 		return Stream.of(this);
 	}
 

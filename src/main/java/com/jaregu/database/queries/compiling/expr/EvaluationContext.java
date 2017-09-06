@@ -1,6 +1,7 @@
 package com.jaregu.database.queries.compiling.expr;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -36,6 +37,9 @@ final class EvaluationContext {
 	}
 
 	public void setOutputVariable(String name, Object value) {
+		if (outputVariables == null) {
+			outputVariables = new LinkedHashMap<>();
+		}
 		outputVariables.put(name, value);
 	}
 

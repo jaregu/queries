@@ -9,7 +9,9 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,9 +25,33 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import com.jaregu.database.queries.building.NamedResolver;
 import com.jaregu.database.queries.building.ParametersResolver;
+import com.jaregu.database.queries.compiling.expr.Expression.ExpressionResult;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExpressionParserImplTest {
+
+	public static void main(String[] args) {
+		ExpressionParserImpl impl = new ExpressionParserImpl();
+
+		for (int i = 0; i < 100; i++) {
+			Expression expr = impl.parse(" (1)  + (2 + (1 + 2 * 1 * 2 + 3) + (3 +4 + (6 + 7))) *  (1)   ").get(0);
+			ExpressionResult result = expr.eval(ParametersResolver.empty());
+			result.getReturnValue();
+		}
+
+		Map<String, Object> values = new HashMap<>();
+		values.put("ccc", 1l);
+		values.put("f123", 123l);
+
+		long a = System.currentTimeMillis();
+		for (int i = 0; i < 1000; i++) {
+			Expression expr = impl.parse(" (1)  + (2 + (1 + 2 * 1 * 2 + 3) + (3 +4 + (6 + 7))) *  (1)   ").get(0);
+			ExpressionResult result = expr.eval(ParametersResolver.empty());
+			result.getReturnValue();
+		}
+		System.out.println(System.currentTimeMillis() - a);
+
+	}
 
 	private ExpressionParserImpl impl = new ExpressionParserImpl();
 
@@ -89,6 +115,8 @@ public class ExpressionParserImplTest {
 		eval(true, ":bT");
 		eval(false, ":bF");
 		eval(null, ":nil");
+		eval(false, "! :bT");
+		eval(true, " ! :bF ");
 	}
 
 	@Test
@@ -141,12 +169,24 @@ public class ExpressionParserImplTest {
 		eval(false, "true && (true || true) && false");
 		eval(false, "(1 > 2 || 2 <=2) && (true && :bF)");
 		eval(true, " :bT != null && :bT");
+		eval(false, ":nil != null");
+		eval(true, " :nil == null");
+		eval(true, "(1 > 2 || 2 <=2) && (true && !:bF)");
 	}
 
 	@Test
 	public void testEvaluationPrecedance() {
 		eval(false, ":bT && :bT && :bT && :bF && :nil");
 		eval(false, ":nil != null && :nil > 3");
+		eval(true, ":bT && :bT && :bT && !:bF");
+		eval(true, "false ? true : false ? false: true");
+		eval("aa", "!false ? 'aa' : ('aa' + :nil)");
+	}
+
+	@Test
+	public void testTernary() {
+		eval(1l, "true? 1: 2");
+		eval("bb", "false ? 'aa' : 'bb'");
 	}
 
 	@Test
@@ -156,12 +196,26 @@ public class ExpressionParserImplTest {
 	}
 
 	@Test
+	public void testAssignment() {
+		evalVariables("aaa = 'bbb'", Collections.singletonMap("aaa", "bbb"));
+		evalException("aaa");
+
+		Map<String, Object> values = new HashMap<>();
+		values.put("aaa", "A");
+		values.put("bbb", "C");
+		values.put("ccc", 1l);
+		values.put("ddd", true);
+		values.put("f123", 123l);
+		evalVariables("aaa = 'A';bbb='B';bbb='C'  ; ccc  = 1; ddd= !false; f123 = :bF ? 'T' : 123", values);
+	}
+
+	@Test
 	public void testParseException() {
-		parseException("aaa");
 		parseException("+");
 		parseException("'a'+");
 		parseException("<=   aa < bbb");
 		parseException("(1+2 + (3+4) + 5");
+		parseException("5 ; * 4");
 	}
 
 	@Test
@@ -216,6 +270,7 @@ public class ExpressionParserImplTest {
 
 		evalException("5 && 2");
 		evalException("5 || 2");
+		evalException("!5");
 	}
 
 	@Test
@@ -251,6 +306,7 @@ public class ExpressionParserImplTest {
 
 		evalException("5.5 && 2.5");
 		evalException("5.5 || 2.5");
+		evalException("!5.5");
 	}
 
 	@Test
@@ -290,6 +346,8 @@ public class ExpressionParserImplTest {
 		evalException("false || '111'");
 		evalException("false || null");
 
+		eval(true, "!false");
+		eval(false, "!true");
 	}
 
 	@Test
@@ -328,6 +386,7 @@ public class ExpressionParserImplTest {
 		eval("aaatrue", "'aaa' + true");
 		eval("aaafalse", "'aaa' + false");
 		evalException("'aaa' + null");
+		evalException("!'aaa'");
 	}
 
 	private void parseException(String expression) {
@@ -354,6 +413,14 @@ public class ExpressionParserImplTest {
 	private void evalMultiple(String expression, Object... expected) {
 		assertThat(impl.parse(expression).stream().map(e -> e.eval(ParametersResolver.ofNamedParameters(resolver)))
 				.map(r -> r.getReturnValue()).collect(Collectors.toList())).containsExactly(expected);
+	}
+
+	private void evalVariables(String expression, Map<String, Object> expected) {
+		Map<String, Object> result = impl.parse(expression).stream()
+				.map(e -> e.eval(ParametersResolver.ofNamedParameters(resolver))).map(r -> r.getOutputVariables())
+				.map(Map::entrySet).flatMap(Collection::stream)
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v2));
+		assertThat(result).containsAllEntriesOf(expected);
 	}
 
 	@Test

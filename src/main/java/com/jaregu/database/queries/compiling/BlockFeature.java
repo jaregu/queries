@@ -79,8 +79,8 @@ public class BlockFeature implements QueryCompilerFeature {
 		List<ParsedQueryPart> sourceParts = source.getParts();
 
 		ParsedQueryPart openComment = sourceParts.get(0);
-		String conditionExpression = openComment.getCommentContent().substring(0, BLOCK_OPEN_SYMBOLS.length() - 1)
-				.trim();
+		String conditionExpression = openComment.getCommentContent()
+				.substring(0, openComment.getCommentContent().length() - BLOCK_OPEN_SYMBOLS.length()).trim();
 
 		List<PreparedQueryPart> children;
 		if (sourceParts.size() > 2) {
@@ -93,7 +93,7 @@ public class BlockFeature implements QueryCompilerFeature {
 		if (conditionExpression.length() > 0) {
 			Expression expression = context.getExpressionParser().parse(conditionExpression).get(0);
 			conditionFunction = (v) -> {
-				Object result = expression.eval(v);
+				Object result = expression.eval(v).getReturnValue();
 				if (result == null || !(result instanceof Boolean)) {
 					throw new QueryBuildException(
 							"Can't build SQL block feature, condition expression result is not boolean: " + expression);
@@ -131,17 +131,17 @@ public class BlockFeature implements QueryCompilerFeature {
 		@Override
 		public Result build(ParametersResolver resolver) {
 			if (conditionFunction.apply(resolver)) {
-				StringBuilder sb = new StringBuilder(prefix);
+				StringBuilder sql = new StringBuilder(prefix);
 				List<Object> allParams = new LinkedList<>();
 				Map<String, Object> allAttrs = new HashMap<>();
 				for (PreparedQueryPart part : children) {
 					Result result = part.build(resolver);
-					sb.append(result.getSql());
+					result.getSql().ifPresent(sql::append);
 					allParams.addAll(result.getParameters());
 					allAttrs.putAll(result.getAttributes());
 				}
-				sb.append(suffix);
-				return new PreparedQueryPartResultImpl(Optional.of(sb.toString()), allParams, allAttrs);
+				sql.append(suffix);
+				return new PreparedQueryPartResultImpl(Optional.of(sql.toString()), allParams, allAttrs);
 			} else {
 				return PreparedQueryPart.EMPTY;
 			}

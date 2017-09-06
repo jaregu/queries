@@ -7,15 +7,15 @@ import com.jaregu.database.queries.building.ParametersResolver;
 
 public class ExpressionImpl implements Expression {
 
-	private ExpressionBlock block;
+	private Operand operand;
 
-	public ExpressionImpl(ExpressionBlock block) {
-		this.block = block;
+	public ExpressionImpl(Operand operand) {
+		this.operand = operand;
 	}
 
 	@Override
 	public List<String> getVariableNames() {
-		return block.getVariableNames();
+		return operand.getVariableNames();
 	}
 
 	@Override
@@ -23,13 +23,13 @@ public class ExpressionImpl implements Expression {
 		EvaluationContext context = EvaluationContext.forVariableResolver(variableResolver).withBaseExpression(this)
 				.build();
 		return new ResultImpl(context.withContext(() -> {
-			return block.getValue();
+			return operand.getValue();
 		}), context.getOutputVariables());
 	}
 
 	@Override
 	public String toString() {
-		return "Expression[" + block.toString() + "]";
+		return "Expression[" + operand.toString() + "]";
 	}
 
 	private static class ResultImpl implements ExpressionResult {

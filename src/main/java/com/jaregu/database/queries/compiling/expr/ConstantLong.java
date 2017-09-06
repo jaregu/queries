@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class ConstantLong extends ConstantBaseImpl<Long> {
+public final class ConstantLong extends ConstantBaseImpl<Long> {
 
 	public ConstantLong(Long value) {
 		super(value);

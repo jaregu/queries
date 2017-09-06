@@ -31,4 +31,10 @@ public interface Operand {
 	boolean and(Operand object);
 
 	boolean or(Operand object);
+
+	boolean not();
+
+	Object ternary(Operand first, Operand second);
+
+	Object assign(Operand object);
 }

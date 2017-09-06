@@ -2,7 +2,7 @@ package com.jaregu.database.queries.compiling.expr;
 
 import java.util.Optional;
 
-public class ConstantBoolean extends ConstantBaseImpl<Boolean> {
+public final class ConstantBoolean extends ConstantBaseImpl<Boolean> {
 
 	final private static ConstantBoolean TRUE = new ConstantBoolean(true);
 	final private static ConstantBoolean FALSE = new ConstantBoolean(false);
@@ -53,5 +53,19 @@ public class ConstantBoolean extends ConstantBaseImpl<Boolean> {
 				return super.and(operand);
 			}
 		}
+	}
+
+	@Override
+	public Object ternary(Operand first, Operand second) {
+		if (getValue()) {
+			return first.getValue();
+		} else {
+			return second.getValue();
+		}
+	}
+
+	@Override
+	public boolean not() {
+		return !getValue();
 	}
 }

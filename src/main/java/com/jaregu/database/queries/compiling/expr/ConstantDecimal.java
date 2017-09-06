@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class ConstantDecimal extends ConstantBaseImpl<BigDecimal> {
+public final class ConstantDecimal extends ConstantBaseImpl<BigDecimal> {
 
 	public ConstantDecimal(BigDecimal value) {
 		super(value);
