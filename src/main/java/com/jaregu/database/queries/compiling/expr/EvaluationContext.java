@@ -10,7 +10,7 @@ import com.jaregu.database.queries.building.ParametersResolver;
 
 final class EvaluationContext {
 
-	private static final ThreadLocal<EvaluationContext> currentContext = new ThreadLocal<>();
+	private static final ThreadLocal<EvaluationContext> CONTEXT = new ThreadLocal<>();
 
 	private ParametersResolver variableResolver;
 	private Optional<Expression> baseExpression;
@@ -48,7 +48,7 @@ final class EvaluationContext {
 	}
 
 	public static Optional<EvaluationContext> peekCurrent() {
-		return Optional.ofNullable(currentContext.get());
+		return Optional.ofNullable(CONTEXT.get());
 	}
 
 	public static EvaluationContext getCurrent() {
@@ -57,12 +57,12 @@ final class EvaluationContext {
 	}
 
 	public static <T> T withContext(EvaluationContext context, Supplier<T> work) {
-		EvaluationContext oldContext = currentContext.get();
+		EvaluationContext oldContext = CONTEXT.get();
 		try {
-			currentContext.set(context);
+			CONTEXT.set(context);
 			return work.get();
 		} finally {
-			currentContext.set(oldContext);
+			CONTEXT.set(oldContext);
 		}
 	}
 

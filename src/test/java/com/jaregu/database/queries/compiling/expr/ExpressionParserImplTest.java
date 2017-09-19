@@ -25,33 +25,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import com.jaregu.database.queries.building.NamedResolver;
 import com.jaregu.database.queries.building.ParametersResolver;
-import com.jaregu.database.queries.compiling.expr.Expression.ExpressionResult;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExpressionParserImplTest {
-
-	public static void main(String[] args) {
-		ExpressionParserImpl impl = new ExpressionParserImpl();
-
-		for (int i = 0; i < 100; i++) {
-			Expression expr = impl.parse(" (1)  + (2 + (1 + 2 * 1 * 2 + 3) + (3 +4 + (6 + 7))) *  (1)   ").get(0);
-			ExpressionResult result = expr.eval(ParametersResolver.empty());
-			result.getReturnValue();
-		}
-
-		Map<String, Object> values = new HashMap<>();
-		values.put("ccc", 1l);
-		values.put("f123", 123l);
-
-		long a = System.currentTimeMillis();
-		for (int i = 0; i < 1000; i++) {
-			Expression expr = impl.parse(" (1)  + (2 + (1 + 2 * 1 * 2 + 3) + (3 +4 + (6 + 7))) *  (1)   ").get(0);
-			ExpressionResult result = expr.eval(ParametersResolver.empty());
-			result.getReturnValue();
-		}
-		System.out.println(System.currentTimeMillis() - a);
-
-	}
 
 	private ExpressionParserImpl impl = new ExpressionParserImpl();
 
@@ -71,10 +47,14 @@ public class ExpressionParserImplTest {
 
 	@Test
 	public void testIsLikeExpression() {
-		isLike("aaa");
-		isLike(".aaa");
-		isLike("+");
-		isLike("<=");
+		isNotLike("");
+		isNotLike(";");
+		isNotLike("aaa");
+		isLike(" aaa = 12");
+		isNotLike(".aaa");
+		isLike(":aaa");
+		isNotLike("+");
+		isNotLike("<=");
 		isLike("<=   aa < bbb");
 		isLike("1+2+3");
 		isLike("'1 '+'2 3 4'+' 3'");
@@ -84,6 +64,13 @@ public class ExpressionParserImplTest {
 		isLike(" (1)  + (2 + (1 + 2 + 3) + (1 +4 + (6 + 7))) *  (3)   ");
 		isLike("()()(())((()())())");
 		isNotLike("1 + b c + 2");
+		isNotLike(" { ");
+		isNotLike(" :aa { ");
+		isNotLike(" :a + 1 { ");
+		isNotLike(" } ");
+		isLike(" :aa");
+		isNotLike("this is just some text");
+		isNotLike("you can :a + :b if needed");
 	}
 
 	private void isLike(String expression) {
@@ -96,7 +83,7 @@ public class ExpressionParserImplTest {
 
 	@Test
 	public void testConstants() {
-		eval(123l, "123");
+		eval(123, "123");
 		eval(null, " null");
 		eval(true, " true ");
 		eval(false, "FALSE  ");
@@ -136,12 +123,12 @@ public class ExpressionParserImplTest {
 
 	@Test
 	public void testMath() {
-		eval(3l, "1+2");
-		eval(6l, " 1+2+ 3   ");
-		eval(7l, "1 + 2 *   3");
-		eval(7l, " (1)  + (2) * \n (3)  \n \n");
-		eval(9l, "(1+ 2  )* 3");
-		eval(79l, " (1)  + (2 + (1 + 1 * 1 * 2 + 3) + (1 +4 + (6 + 7))) *  (3)   ");
+		eval(3, "1+2");
+		eval(6, " 1+2+ 3   ");
+		eval(7, "1 + 2 *   3");
+		eval(7, " (1)  + (2) * \n (3)  \n \n");
+		eval(9, "(1+ 2  )* 3");
+		eval(79, " (1)  + (2 + (1 + 1 * 1 * 2 + 3) + (1 +4 + (6 + 7))) *  (3)   ");
 	}
 
 	@Test
@@ -185,7 +172,7 @@ public class ExpressionParserImplTest {
 
 	@Test
 	public void testTernary() {
-		eval(1l, "true? 1: 2");
+		eval(1, "true? 1: 2");
 		eval("bb", "false ? 'aa' : 'bb'");
 	}
 
@@ -198,20 +185,20 @@ public class ExpressionParserImplTest {
 	@Test
 	public void testAssignment() {
 		evalVariables("aaa = 'bbb'", Collections.singletonMap("aaa", "bbb"));
-		evalException("aaa");
+		isNotLike("aaa");
 
 		Map<String, Object> values = new HashMap<>();
 		values.put("aaa", "A");
 		values.put("bbb", "C");
-		values.put("ccc", 1l);
+		values.put("ccc", 1);
 		values.put("ddd", true);
-		values.put("f123", 123l);
+		values.put("f123", 123);
 		evalVariables("aaa = 'A';bbb='B';bbb='C'  ; ccc  = 1; ddd= !false; f123 = :bF ? 'T' : 123", values);
 	}
 
 	@Test
 	public void testParseException() {
-		parseException("+");
+		isNotLike("+");
 		parseException("'a'+");
 		parseException("<=   aa < bbb");
 		parseException("(1+2 + (3+4) + 5");
@@ -219,11 +206,11 @@ public class ExpressionParserImplTest {
 	}
 
 	@Test
-	public void testConstantLongOperations() {
-		eval(10l, "5 * 2");
-		eval(5l, "10 / 2");
-		eval(7l, "5 + 2");
-		eval(3l, "5 - 2");
+	public void testConstantIntegerOperations() {
+		eval(10, "5 * 2");
+		eval(5, "10 / 2");
+		eval(7, "5 + 2");
+		eval(3, "5 - 2");
 
 		eval(false, "5 > 5");
 		eval(false, "5 > 6");
@@ -271,6 +258,11 @@ public class ExpressionParserImplTest {
 		evalException("5 && 2");
 		evalException("5 || 2");
 		evalException("!5");
+	}
+
+	@Test
+	public void testConstantLongOperations() {
+		eval(1012312221233l, "1012312221232 + 1");
 	}
 
 	@Test
@@ -391,6 +383,7 @@ public class ExpressionParserImplTest {
 
 	private void parseException(String expression) {
 		try {
+			assertTrue(impl.isLikeExpression(expression));
 			impl.parse(expression);
 			fail();
 		} catch (ExpressionParseException e) {
@@ -398,12 +391,14 @@ public class ExpressionParserImplTest {
 	}
 
 	private void eval(Object expected, String expression) {
+		assertTrue(impl.isLikeExpression(expression));
 		assertEquals(expected,
 				impl.parse(expression).get(0).eval(ParametersResolver.ofNamedParameters(resolver)).getReturnValue());
 	}
 
 	private void evalException(String expression) {
 		try {
+			assertTrue(impl.isLikeExpression(expression));
 			impl.parse(expression).get(0).eval(ParametersResolver.ofNamedParameters(resolver));
 			fail();
 		} catch (ExpressionEvalException e) {
@@ -411,11 +406,13 @@ public class ExpressionParserImplTest {
 	}
 
 	private void evalMultiple(String expression, Object... expected) {
+		assertTrue(impl.isLikeExpression(expression));
 		assertThat(impl.parse(expression).stream().map(e -> e.eval(ParametersResolver.ofNamedParameters(resolver)))
 				.map(r -> r.getReturnValue()).collect(Collectors.toList())).containsExactly(expected);
 	}
 
 	private void evalVariables(String expression, Map<String, Object> expected) {
+		assertTrue(impl.isLikeExpression(expression));
 		Map<String, Object> result = impl.parse(expression).stream()
 				.map(e -> e.eval(ParametersResolver.ofNamedParameters(resolver))).map(r -> r.getOutputVariables())
 				.map(Map::entrySet).flatMap(Collection::stream)
@@ -435,6 +432,12 @@ public class ExpressionParserImplTest {
 		evalCol(false, ":strings.empty", resolver);
 	}
 
+	private void evalCol(Object expected, String expression, NamedResolver resolver) {
+		assertTrue(impl.isLikeExpression(expression));
+		assertEquals(expected,
+				impl.parse(expression).get(0).eval(ParametersResolver.ofNamedParameters(resolver)).getReturnValue());
+	}
+
 	public static class CollectionsHolder {
 		public Set<String> emptySet = Collections.emptySet();
 		public List<String> emptyList = Collections.emptyList();
@@ -442,10 +445,5 @@ public class ExpressionParserImplTest {
 		public List<String> col1 = Collections.singletonList("1");
 		public List<Integer> numbers = Collections.unmodifiableList(Arrays.asList(1, 2, 3, 4));
 		public List<String> strings = Collections.unmodifiableList(Arrays.asList("a", "b", "c"));
-	}
-
-	private void evalCol(Object expected, String expression, NamedResolver resolver) {
-		assertEquals(expected,
-				impl.parse(expression).get(0).eval(ParametersResolver.ofNamedParameters(resolver)).getReturnValue());
 	}
 }

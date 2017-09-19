@@ -8,9 +8,10 @@ import java.util.function.Function;
 public interface Constant extends Operand {
 
 	static final List<Function<String, Optional<Constant>>> STRING_PARSERS = Arrays.asList(ConstantNull::parse,
-			ConstantBoolean::parse, ConstantString::parse, ConstantLong::parse, ConstantDecimal::parse);
+			ConstantBoolean::parse, ConstantString::parse, ConstantInteger::parse, ConstantLong::parse,
+			ConstantDecimal::parse);
 	static final List<Function<Object, Optional<Constant>>> VALUE_PARSERS = Arrays.asList(ConstantNull::of,
-			ConstantBoolean::of, ConstantString::of, ConstantLong::of, ConstantDecimal::of);
+			ConstantBoolean::of, ConstantString::of, ConstantInteger::of, ConstantLong::of, ConstantDecimal::of);
 
 	public static Optional<Constant> parse(String value) {
 		for (Function<String, Optional<Constant>> parser : STRING_PARSERS) {

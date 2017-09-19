@@ -62,11 +62,12 @@ public class QueriesParserImpl implements QueriesParser {
 			// boolean endingPart = && part.endsWith(";");
 			// endingPart ? part.substring(0, part.length() - 1) :
 			ParsedQueryPart queryPart = ParsedQueryPart.create(part);
-			currentQuery.add(queryPart);
 			if (!queryPart.isComment() && queryPart.getContent().endsWith(";")) {
+				currentQuery.add(ParsedQueryPart.create(part.substring(0, part.indexOf(";"))));
 				queries.add(currentQuery);
-
 				currentQuery = new LinkedList<>();
+			} else {
+				currentQuery.add(queryPart);
 			}
 		}
 		if (!currentQuery.isEmpty() && currentQuery.stream().anyMatch(s -> s.getContent().trim().length() > 0)) {

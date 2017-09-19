@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import com.jaregu.database.queries.QueriesContext;
 import com.jaregu.database.queries.building.ParametersResolver;
 import com.jaregu.database.queries.building.QueryBuildException;
 import com.jaregu.database.queries.compiling.expr.Expression;
@@ -75,7 +76,7 @@ public class BlockFeature implements QueryCompilerFeature {
 
 	@Override
 	public Result compile(Source source, Compiler compiler) {
-		CompilingContext context = CompilingContext.getCurrent();
+		QueriesContext context = QueriesContext.getCurrent();
 		List<ParsedQueryPart> sourceParts = source.getParts();
 
 		ParsedQueryPart openComment = sourceParts.get(0);
@@ -91,7 +92,7 @@ public class BlockFeature implements QueryCompilerFeature {
 
 		Function<ParametersResolver, Boolean> conditionFunction;
 		if (conditionExpression.length() > 0) {
-			Expression expression = context.getExpressionParser().parse(conditionExpression).get(0);
+			Expression expression = context.getConfig().getExpressionParser().parse(conditionExpression).get(0);
 			conditionFunction = (v) -> {
 				Object result = expression.eval(v).getReturnValue();
 				if (result == null || !(result instanceof Boolean)) {

@@ -14,4 +14,8 @@ public interface ExpressionParser {
 	boolean isLikeExpression(String expression);
 
 	List<Expression> parse(String expression) throws ExpressionParseException;
+
+	static ExpressionParser createDefault() {
+		return new ExpressionParserImpl();
+	}
 }

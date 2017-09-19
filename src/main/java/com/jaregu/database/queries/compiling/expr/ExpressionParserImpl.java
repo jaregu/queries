@@ -32,16 +32,30 @@ public class ExpressionParserImpl implements ExpressionParser {
 	@Override
 	public boolean isLikeExpression(String expression) {
 		SplitParts parts = split(expression);
-		// if there is no two sequential sequences - lets answer that this is
-		// expression
-		SplitPart lastPart = null;
-		for (SplitPart part : parts) {
-			if (lastPart != null && lastPart.isSequence() && part.isSequence()) {
-				return false;
+		if (parts.size() == 0) {
+			return false;
+		} else if (parts.size() == 1) {
+			Optional<Operand> operand = parseOperand(parts.get(0));
+			return operand.isPresent() && !(operand.get() instanceof OutputVariable);
+		} else {
+			Optional<Operand> lastOperand = Optional.empty();
+			for (SplitPart part : parts) {
+				Optional<Operand> operand;
+				if (part.isSequence()) {
+					operand = parseOperand(part);
+					if (!operand.isPresent()) {
+						return false;
+					} else if (operand.get() instanceof OutputVariable && lastOperand.isPresent()
+							&& lastOperand.get() instanceof OutputVariable) {
+						return false;
+					}
+					lastOperand = operand;
+				} else {
+					lastOperand = Optional.empty();
+				}
 			}
-			lastPart = part;
+			return true;
 		}
-		return true;
 	}
 
 	@Override
@@ -244,23 +258,30 @@ public class ExpressionParserImpl implements ExpressionParser {
 	}
 
 	public Operand toOperand(SplitPart part) {
-		if (part.isOperand()) {
-			return part.getOperand();
-		} else if (part.isSequence()) {
-			Optional.empty();
-			return (Constant.parse(part.getSequence())).map(c -> (Operand) c)
-					.orElseGet(() -> Variable.parse(part.getSequence()).map(c -> (Operand) c)
-							.orElseGet(() -> OutputVariable.parse(part.getSequence())
-									.orElseThrow(() -> new ExpressionParseException(
-											"Can't parse expression, unknown character sequence: " + part + "!")))
+		return parseOperand(part).orElseThrow(
+				() -> new ExpressionParseException("Can't parse expression, operand expected, but got: " + part));
+	}
 
-			);
-		} else if (part.isOperator()) {
-			throw new ExpressionParseException(
-					"Can't cast operator as operand, expected operand but got operator: " + part + "!");
-		} else {
-			throw new ExpressionParseException("Can't parse expression as operand, not operand: " + part + "!");
+	public Optional<Operand> parseOperand(SplitPart part) {
+		if (part.isOperand()) {
+			return Optional.of(part.getOperand());
+		} else if (part.isSequence()) {
+			Optional<Constant> constant = Constant.parse(part.getSequence());
+			if (constant.isPresent()) {
+				return Optional.of(constant.get());
+			} else {
+				Optional<Variable> variable = Variable.parse(part.getSequence());
+				if (variable.isPresent()) {
+					return Optional.of(variable.get());
+				} else {
+					Optional<OutputVariable> output = OutputVariable.parse(part.getSequence());
+					if (output.isPresent()) {
+						return Optional.of(output.get());
+					}
+				}
+			}
 		}
+		return Optional.empty();
 	}
 
 	private static class SplitParts implements Iterable<SplitPart> {

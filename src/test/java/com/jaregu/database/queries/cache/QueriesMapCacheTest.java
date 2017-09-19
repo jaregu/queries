@@ -49,7 +49,7 @@ public class QueriesMapCacheTest {
 	public void setUp() {
 
 	}
-
+	
 	@Test
 	public void testGetSourceQueries() throws Exception {
 

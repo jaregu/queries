@@ -24,14 +24,14 @@ public class ConstantTest {
 		assertTrue(Constant.of(false) instanceof ConstantBoolean);
 		assertEquals(false, Constant.of(false).getValue());
 
-		assertTrue(Constant.of((short) 999) instanceof ConstantLong);
-		assertEquals(999l, Constant.of((short) 999).getValue());
+		assertTrue(Constant.of((short) 999) instanceof ConstantInteger);
+		assertEquals(999, Constant.of((short) 999).getValue());
 
-		assertTrue(Constant.of((byte) 123) instanceof ConstantLong);
-		assertEquals(123l, Constant.of((byte) 123).getValue());
+		assertTrue(Constant.of((byte) 123) instanceof ConstantInteger);
+		assertEquals(123, Constant.of((byte) 123).getValue());
 
-		assertTrue(Constant.of(12312312) instanceof ConstantLong);
-		assertEquals(12312312l, Constant.of(12312312).getValue());
+		assertTrue(Constant.of(12312312) instanceof ConstantInteger);
+		assertEquals(12312312, Constant.of(12312312).getValue());
 
 		assertTrue(Constant.of(12334343243l) instanceof ConstantLong);
 		assertEquals(12334343243l, Constant.of(12334343243l).getValue());
@@ -72,8 +72,8 @@ public class ConstantTest {
 		assertTrue(Constant.parse("falSe").get() instanceof ConstantBoolean);
 		assertEquals(Boolean.FALSE, Constant.parse("falSe").get().getValue());
 
-		assertTrue(Constant.parse("123123123").get() instanceof ConstantLong);
-		assertEquals(123123123l, Constant.parse("123123123").get().getValue());
+		assertTrue(Constant.parse("123123123").get() instanceof ConstantInteger);
+		assertEquals(123123123, Constant.parse("123123123").get().getValue());
 
 		assertTrue(Constant.parse("123.11").get() instanceof ConstantDecimal);
 		assertEquals(new BigDecimal("123.11"), Constant.parse("123.11").get().getValue());

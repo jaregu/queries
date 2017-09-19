@@ -12,6 +12,8 @@ import com.google.inject.Inject;
 import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 import com.jaregu.database.queries.Queries;
+import com.jaregu.database.queries.QueriesConfig;
+import com.jaregu.database.queries.QueriesConfigImpl;
 import com.jaregu.database.queries.QueriesImpl.Builder;
 import com.jaregu.database.queries.cache.QueriesCache;
 import com.jaregu.database.queries.parsing.QueriesSource;
@@ -28,11 +30,13 @@ public class QueriesProvider implements Provider<Queries> {
 
 	@Override
 	public Queries get() {
-		Builder builder = Queries.newBuilder();
+		QueriesConfigImpl.Builder configBuilder = Queries.configBuilder();
 		if (ApplicationMode.isDevelopment()) {
-			builder.setCache(QueriesCache.noCache());
+			configBuilder.cache(QueriesCache.noCache());
 		}
-		return builder.setSources(this::getSources).build();
+		QueriesConfig config = configBuilder.build();
+		Builder builder = Queries.builder().config(config);
+		return builder.sources(this::getSources).build();
 	}
 
 	private Collection<QueriesSource> getSources() {

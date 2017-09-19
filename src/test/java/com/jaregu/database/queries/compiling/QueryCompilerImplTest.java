@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -25,7 +26,6 @@ import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Compiler;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Result;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Source;
-import com.jaregu.database.queries.compiling.expr.ExpressionParser;
 import com.jaregu.database.queries.parsing.ParsedQuery;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
@@ -34,11 +34,8 @@ public class QueryCompilerImplTest {
 
 	private QueryId goodFood = QueryId.of("good.food");
 
-	@Mock
-	private ExpressionParser interior;
-
-	@Mock
-	private QueriesConfig reservations;
+	@Mock(answer = Answers.RETURNS_MOCKS)
+	private QueriesConfig interior;
 
 	@Before
 	public void setUp() {
@@ -73,7 +70,7 @@ public class QueryCompilerImplTest {
 	}
 
 	private Cafe open(QueryCompilerFeature... eaters) {
-		QueryCompilerImpl kitchen = new QueryCompilerImpl(reservations, interior, Arrays.asList(eaters));
+		QueryCompilerImpl kitchen = new QueryCompilerImpl(Arrays.asList(eaters));
 		return (food) -> serve(cook(kitchen, food));
 	}
 

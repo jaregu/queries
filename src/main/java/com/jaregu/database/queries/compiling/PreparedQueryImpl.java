@@ -1,18 +1,18 @@
 package com.jaregu.database.queries.compiling;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import com.jaregu.database.queries.QueryId;
-import com.jaregu.database.queries.building.Query;
-import com.jaregu.database.queries.building.QueryImpl;
 import com.jaregu.database.queries.building.IteratorResolver;
 import com.jaregu.database.queries.building.NamedResolver;
 import com.jaregu.database.queries.building.ParametersResolver;
+import com.jaregu.database.queries.building.Query;
+import com.jaregu.database.queries.building.QueryImpl;
 import com.jaregu.database.queries.compiling.PreparedQueryPart.Result;
 
 class PreparedQueryImpl implements PreparedQuery {
@@ -65,7 +65,7 @@ class PreparedQueryImpl implements PreparedQuery {
 
 	@Override
 	public Query build(String k1, Object v1, String k2, Object v2) {
-		Map<String, Object> params = new HashMap<>();
+		Map<String, Object> params = new HashMap<>(2);
 		params.put(k1, v1);
 		params.put(k2, v2);
 		return build(params);
@@ -73,10 +73,32 @@ class PreparedQueryImpl implements PreparedQuery {
 
 	@Override
 	public Query build(String k1, Object v1, String k2, Object v2, String k3, Object v3) {
-		Map<String, Object> params = new HashMap<>();
+		Map<String, Object> params = new HashMap<>(3);
 		params.put(k1, v1);
 		params.put(k2, v2);
 		params.put(k3, v3);
+		return build(params);
+	}
+
+	@Override
+	public Query build(String k1, Object v1, String k2, Object v2, String k3, Object v3, String k4, Object v4) {
+		Map<String, Object> params = new HashMap<>(4);
+		params.put(k1, v1);
+		params.put(k2, v2);
+		params.put(k3, v3);
+		params.put(k4, v4);
+		return build(params);
+	}
+
+	@Override
+	public Query build(String k1, Object v1, String k2, Object v2, String k3, Object v3, String k4, Object v4,
+			String k5, Object v5) {
+		Map<String, Object> params = new HashMap<>(5);
+		params.put(k1, v1);
+		params.put(k2, v2);
+		params.put(k3, v3);
+		params.put(k4, v4);
+		params.put(k5, v5);
 		return build(params);
 	}
 
@@ -98,7 +120,7 @@ class PreparedQueryImpl implements PreparedQuery {
 	@Override
 	public Query build(ParametersResolver resolver) {
 		StringBuilder sql = new StringBuilder();
-		List<Object> allParameters = new LinkedList<>();
+		List<Object> allParameters = new ArrayList<>();
 		Map<String, Object> allAttributes = new HashMap<>();
 		for (PreparedQueryPart part : parts) {
 			Result result = part.build(resolver);

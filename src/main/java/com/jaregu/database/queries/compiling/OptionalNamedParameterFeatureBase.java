@@ -1,15 +1,15 @@
 package com.jaregu.database.queries.compiling;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
+import com.jaregu.database.queries.QueriesContext;
 import com.jaregu.database.queries.building.NamedResolver;
+import com.jaregu.database.queries.building.ParameterBindingBuilder;
 import com.jaregu.database.queries.building.ParametersResolver;
 import com.jaregu.database.queries.building.QueryBuildException;
 import com.jaregu.database.queries.compiling.expr.Expression;
@@ -28,14 +28,14 @@ public abstract class OptionalNamedParameterFeatureBase implements QueryCompiler
 	protected static final Function<ParsedQueryPart, Boolean> IS_ANONYMOUS_VARIABLE = (p) -> p.isAnonymousVariable();
 
 	protected static final Function<ParsedQueryPart, Boolean> IS_HYPHEN_COMMENT_EXPRESSION = (p) -> {
-		ExpressionParser parser = CompilingContext.getCurrent().getExpressionParser();
+		ExpressionParser parser = QueriesContext.getCurrent().getConfig().getExpressionParser();
 		return p.isComment() && p.getCommentType() == CommentType.HYPHENS
 				&& parser.isLikeExpression(p.getCommentContent());
 
 	};
 
 	protected static final Function<ParsedQueryPart, Boolean> IS_SLASH_COMMENT_EXPRESSION = (p) -> {
-		ExpressionParser parser = CompilingContext.getCurrent().getExpressionParser();
+		ExpressionParser parser = QueriesContext.getCurrent().getConfig().getExpressionParser();
 		return p.isComment() && p.getCommentType() == CommentType.SLASH_AND_ASTERISK
 				&& parser.isLikeExpression(p.getCommentContent());
 
@@ -109,18 +109,21 @@ public abstract class OptionalNamedParameterFeatureBase implements QueryCompiler
 			afterPartIndex.stream().map(parts::get).map(ParsedQueryPart::getContent).forEach(afterSql::append);
 			List<Expression> expressions = getExpressions();
 
+			ParameterBindingBuilder bindingBuilder = QueriesContext.getCurrent().getConfig()
+					.getParameterBindingBuilder();
+
 			return new Result() {
 				@Override
 				public List<PreparedQueryPart> getParts() {
-					return Collections.singletonList(
-							new CompiledQueryOneParameterPart(beforeSql.toString(), afterSql.toString(), expressions));
+					return Collections.singletonList(new CompiledQueryOneParameterPart(beforeSql.toString(),
+							afterSql.toString(), expressions, bindingBuilder));
 				}
 			};
 		}
 
 		private List<Expression> getExpressions() {
-			CompilingContext context = CompilingContext.getCurrent();
-			List<Expression> expressions = context.getExpressionParser()
+			QueriesContext context = QueriesContext.getCurrent();
+			List<Expression> expressions = context.getConfig().getExpressionParser()
 					.parse(source.getParts().get(commentPartIndex).getCommentContent());
 			return expressions;
 		}
@@ -133,12 +136,15 @@ public abstract class OptionalNamedParameterFeatureBase implements QueryCompiler
 		private String afterSql;
 		private Expression valueExpression;
 		private Optional<Expression> conditionalExpression;
+		private ParameterBindingBuilder bindingBuilder;
 
-		public CompiledQueryOneParameterPart(String beforeSql, String afterSql, List<Expression> expressions) {
+		public CompiledQueryOneParameterPart(String beforeSql, String afterSql, List<Expression> expressions,
+				ParameterBindingBuilder bindingBuilder) {
 			this.beforeSql = beforeSql;
 			this.afterSql = afterSql;
 			this.valueExpression = expressions.get(0);
 			this.conditionalExpression = expressions.size() == 1 ? Optional.empty() : Optional.of(expressions.get(1));
+			this.bindingBuilder = bindingBuilder;
 		}
 
 		@Override
@@ -146,27 +152,9 @@ public abstract class OptionalNamedParameterFeatureBase implements QueryCompiler
 			if (addCriterionLine(resolver)) {
 				ExpressionResult expressionResult = valueExpression.eval(resolver);
 				Object value = expressionResult.getReturnValue();
-				String sql;
-				List<Object> parameters;
-				if (value instanceof Collection<?>) {
-					Collection<?> collection = (Collection<?>) value;
-					Iterator<?> valuesIterator = collection.iterator();
-					parameters = new ArrayList<>(collection.size());
-					StringBuilder parametersSql = new StringBuilder(beforeSql);
-					if (valuesIterator.hasNext()) {
-						parametersSql.append("?");
-						parameters.add(valuesIterator.next());
-						while (valuesIterator.hasNext()) {
-							parametersSql.append(", ?");
-							parameters.add(valuesIterator.next());
-						}
-					}
-					parametersSql.append(afterSql);
-					sql = parametersSql.toString();
-				} else {
-					sql = beforeSql + "?" + afterSql;
-					parameters = Collections.singletonList(value);
-				}
+				ParameterBindingBuilder.Result variableBindingResult = bindingBuilder.process(value);
+				String sql = beforeSql + variableBindingResult.getSql() + afterSql;
+				List<Object> parameters = variableBindingResult.getParemeters();
 				return new PreparedQueryPartResultImpl(Optional.of(sql), parameters,
 						expressionResult.getOutputVariables());
 			} else {

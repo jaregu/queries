@@ -4,9 +4,9 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public final class ConstantLong extends ConstantBaseImpl<Long> {
+public final class ConstantInteger extends ConstantBaseImpl<Integer> {
 
-	public ConstantLong(Long value) {
+	public ConstantInteger(Integer value) {
 		super(value);
 	}
 
@@ -60,10 +60,11 @@ public final class ConstantLong extends ConstantBaseImpl<Long> {
 		return withNumber(object, super::notEqual, (v, o) -> v.compareTo(o) != 0);
 	}
 
-	private <T> T withNumber(Operand operand, Function<Operand, T> defaultCall, BiFunction<Long, Long, T> function) {
+	private <T> T withNumber(Operand operand, Function<Operand, T> defaultCall,
+			BiFunction<Integer, Integer, T> function) {
 		Object otherValue = operand.getValue();
 		if (otherValue != null && otherValue instanceof Number) {
-			return function.apply(getValue(), ((Number) otherValue).longValue());
+			return function.apply(getValue(), ((Number) otherValue).intValue());
 		} else {
 			return defaultCall.apply(operand);
 		}
@@ -71,16 +72,16 @@ public final class ConstantLong extends ConstantBaseImpl<Long> {
 
 	public static Optional<Constant> parse(String expression) {
 		try {
-			long longValue = Long.parseLong(expression);
-			return Optional.of(new ConstantLong(longValue));
+			int longValue = Integer.parseInt(expression);
+			return Optional.of(new ConstantInteger(longValue));
 		} catch (NumberFormatException nfe) {
 			return Optional.empty();
 		}
 	}
 
 	public static Optional<Constant> of(Object value) {
-		if (value instanceof Long) {
-			return Optional.of(new ConstantLong(((Number) value).longValue()));
+		if (value instanceof Integer || value instanceof Short || value instanceof Byte) {
+			return Optional.of(new ConstantInteger(((Number) value).intValue()));
 		} else {
 			return Optional.empty();
 		}

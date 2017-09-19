@@ -1,44 +1,38 @@
 package com.jaregu.database.queries.compiling;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
-import com.jaregu.database.queries.QueriesConfig;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Compiler;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Result;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Source;
-import com.jaregu.database.queries.compiling.expr.ExpressionParser;
-import com.jaregu.database.queries.compiling.expr.ExpressionParserImpl;
 import com.jaregu.database.queries.parsing.ParsedQuery;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
 public class QueryCompilerImpl implements QueryCompiler, Compiler {
 
-	private ExpressionParser expressionParser;
-	private List<QueryCompilerFeature> features;
-	private QueriesConfig config;
+	private static final List<QueryCompilerFeature> FEATURES = Arrays.asList(new IgnoredCommentFeature(),
+			new BlockFeature(), new OptionalHyphenNamedParameterFeature(), new OptionalSlashNamedParameterFeature(),
+			new NamedVariableFeature(), new AnonymousVariableFeature());
 
-	public static QueryCompiler createDefault(QueriesConfig config) {
-		return new Builder(config).addDefaultFeatures().build();
+	private List<QueryCompilerFeature> features;
+
+	public static QueryCompiler createDefault() {
+		return new QueryCompilerImpl(FEATURES);
 	}
 
-	public QueryCompilerImpl(QueriesConfig config, ExpressionParser expressionParser,
-			List<QueryCompilerFeature> features) {
-		this.expressionParser = expressionParser;
+	public QueryCompilerImpl(List<QueryCompilerFeature> features) {
 		this.features = features;
-		this.config = config;
 	}
 
 	@Override
 	public PreparedQuery compile(ParsedQuery sourceQuery) {
-		return CompilingContext.forExpressionParser(expressionParser).config(config).source(sourceQuery).build()
-				.withContext(() -> {
-					PartsCompiler compiler = new PartsCompiler(sourceQuery.getParts());
-					compiler.compile();
-					return new PreparedQueryImpl(sourceQuery.getQueryId(), compiler.getCompiledParts());
-				});
+		return CompileContext.of(sourceQuery).withContext(() -> {
+			PartsCompiler compiler = new PartsCompiler(sourceQuery.getParts());
+			compiler.compile();
+			return new PreparedQueryImpl(sourceQuery.getQueryId(), compiler.getCompiledParts());
+		});
 	}
 
 	@Override
@@ -78,22 +72,23 @@ public class QueryCompilerImpl implements QueryCompiler, Compiler {
 						}
 					} catch (Throwable e) {
 						String query;
-						Optional<ParsedQuery> sourceQuery = CompilingContext.getCurrent().getSourceQuery();
-						if (sourceQuery.isPresent()) {
-							ParsedQueryPart problemPart = sourceParts.get(start);
-							StringBuilder problemQuery = new StringBuilder();
-							for (ParsedQueryPart sourcePart : sourceQuery.get().getParts()) {
-								problemQuery.append(sourcePart.getContent());
-								if (problemPart == sourcePart) {
-									problemQuery.append("<---- Problem part");
-									break;
+						ParsedQuery sourceQuery = CompileContext.getCurrent().getSourceQuery();
+						ParsedQueryPart problemStartPart = sourceParts.get(start);
+						StringBuilder problemQuery = new StringBuilder(" ");
+						for (ParsedQueryPart sourcePart : sourceQuery.getParts()) {
+							if (problemStartPart == sourcePart) {
+								problemQuery.append("[ERROR COMPILING --->]\n");
+								for (ParsedQueryPart problemPart : source.getParts()) {
+									problemQuery.append(problemPart.getContent());
 								}
+								problemQuery.append("\n[<--- ERROR COMPILING][...]");
+								break;
+							} else {
+								problemQuery.append(sourcePart.getContent());
 							}
-							query = " " + problemQuery.toString();
-						} else {
-							query = "";
 						}
-						throw new QueryCompileException("Exception while compiling query." + query, e);
+						query = problemQuery.toString();
+						throw new QueryCompileException("Exception (" + e.getMessage() + "): " + query, e);
 					}
 					if (compiled) {
 						break;
@@ -110,41 +105,6 @@ public class QueryCompilerImpl implements QueryCompiler, Compiler {
 
 		public List<PreparedQueryPart> getCompiledParts() {
 			return compiledParts;
-		}
-	}
-
-	public static class Builder {
-
-		private QueriesConfig config;
-		private ExpressionParser parser = new ExpressionParserImpl();
-		private List<QueryCompilerFeature> features = new LinkedList<>();
-
-		public Builder(QueriesConfig config) {
-			this.config = config;
-		}
-
-		public Builder addFeature(QueryCompilerFeature feature) {
-			features.add(feature);
-			return this;
-		}
-
-		public Builder addDefaultFeatures() {
-			features.add(new IgnoredCommentFeature());
-			features.add(new OptionalHyphenNamedParameterFeature());
-			features.add(new OptionalSlashNamedParameterFeature());
-			features.add(new BlockFeature());
-			features.add(new NamedVariableFeature());
-			features.add(new AnonymousVariableFeature());
-			return this;
-		}
-
-		public Builder withExpressionParser(ExpressionParser parser) {
-			this.parser = Objects.requireNonNull(parser);
-			return this;
-		}
-
-		public QueryCompiler build() {
-			return new QueryCompilerImpl(config, parser, features);
 		}
 	}
 }

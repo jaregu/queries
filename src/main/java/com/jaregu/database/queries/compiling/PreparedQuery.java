@@ -29,6 +29,11 @@ public interface PreparedQuery {
 
 	Query build(String k1, Object v1, String k2, Object v2, String k3, Object v3);
 
+	Query build(String k1, Object v1, String k2, Object v2, String k3, Object v3, String k4, Object v4);
+
+	Query build(String k1, Object v1, String k2, Object v2, String k3, Object v3, String k4, Object v4, String k5,
+			Object v5);
+
 	Query build(NamedResolver resolver);
 
 	Query build(IteratorResolver resolver);

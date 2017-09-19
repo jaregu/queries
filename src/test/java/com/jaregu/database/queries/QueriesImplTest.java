@@ -34,7 +34,7 @@ public class QueriesImplTest {
 				.convertDurationsTo(TimeUnit.MICROSECONDS).build();
 		// reporter.start(1, TimeUnit.SECONDS);
 
-		Queries queries = Queries.ofSources(QueriesSources
+		Queries queries = Queries.of(QueriesSources
 				.of(Arrays.asList(QueriesSource.ofResource("com/jaregu/database/queries/AppUsersDAO.sql"))));
 		final Timer.Context context = responses.time();
 		for (int i = 0; i < 100000; i++) {

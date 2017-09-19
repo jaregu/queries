@@ -71,7 +71,7 @@ public enum CommentType {
 			return comment.substring(startSequence.length(), (endingRequired || comment.endsWith(endSequence)
 					? comment.length() - endSequence.length() : comment.length())).trim();
 		} else {
-			throw new QueriesParseException("Passed srting: " + comment + " is not SQl comment of this type!");
+			throw new QueriesParseException("Passed string: " + comment + " is not SQL comment of this type!");
 		}
 	}
 

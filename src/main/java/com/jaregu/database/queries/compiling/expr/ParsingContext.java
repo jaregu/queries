@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 
 final class ParsingContext {
 
-	private static final ThreadLocal<ParsingContext> currentContext = new ThreadLocal<>();
+	private static final ThreadLocal<ParsingContext> CONTEXT = new ThreadLocal<>();
 
 	private String expression;
 
@@ -27,7 +27,7 @@ final class ParsingContext {
 	}
 
 	public static Optional<ParsingContext> peekCurrent() {
-		return Optional.ofNullable(currentContext.get());
+		return Optional.ofNullable(CONTEXT.get());
 	}
 
 	public static ParsingContext getCurrent() {
@@ -36,12 +36,12 @@ final class ParsingContext {
 	}
 
 	public static <T> T withContext(ParsingContext context, Supplier<T> work) {
-		ParsingContext oldContext = currentContext.get();
+		ParsingContext oldContext = CONTEXT.get();
 		try {
-			currentContext.set(Objects.requireNonNull(context));
+			CONTEXT.set(Objects.requireNonNull(context));
 			return work.get();
 		} finally {
-			currentContext.set(oldContext);
+			CONTEXT.set(oldContext);
 		}
 	}
 

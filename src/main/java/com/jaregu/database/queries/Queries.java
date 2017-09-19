@@ -10,20 +10,36 @@ public interface Queries extends QueriesBase<QueryId> {
 
 	RetativeQueries ofSource(SourceId sourceId);
 
-	static QueriesImpl.Builder newBuilder() {
-		return new QueriesImpl.Builder();
+	static QueriesImpl.Builder builder() {
+		return QueriesImpl.builder();
 	}
 
-	static Queries ofSources(Collection<QueriesSource> sources) {
-		return ofSources(QueriesSources.of(sources));
+	static QueriesConfigImpl.Builder configBuilder() {
+		return QueriesConfig.builder();
 	}
 
-	static Queries ofSources(QueriesSource... sources) {
-		return ofSources(QueriesSources.of(sources));
+	static Queries of(QueriesSources sources) {
+		return of(QueriesConfig.createDefault(), sources);
 	}
 
-	static Queries ofSources(QueriesSources sources) {
-		return new QueriesImpl.Builder().setSources(sources).build();
+	static Queries of(Collection<QueriesSource> sources) {
+		return of(QueriesConfig.createDefault(), QueriesSources.of(sources));
+	}
+
+	static Queries of(QueriesSource... sources) {
+		return of(QueriesConfig.createDefault(), QueriesSources.of(sources));
+	}
+
+	static Queries of(QueriesConfig config, Collection<QueriesSource> sources) {
+		return of(config, QueriesSources.of(sources));
+	}
+
+	static Queries of(QueriesConfig config, QueriesSource... sources) {
+		return of(config, QueriesSources.of(sources));
+	}
+
+	static Queries of(QueriesConfig config, QueriesSources sources) {
+		return QueriesImpl.builder().config(config).sources(sources).build();
 	}
 
 	static QueriesSource sourceOfResource(Class<?> clazz) {

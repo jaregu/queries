@@ -5,6 +5,7 @@ apply plugin: 'eclipse-wtp'
 repositories {
     mavenCentral()
 	jcenter()
+	maven { url "https://maven.atlassian.com/3rdparty/" }
 }
 
 [ compileJava, compileTestJava ]*.options*.encoding = 'UTF-8'
@@ -66,6 +67,8 @@ dependencies {
 	//db
 	example "org.hsqldb:hsqldb:2.4.+"
 	example 'org.mariadb.jdbc:mariadb-java-client:1.5.+'
+	example group: 'com.oracle', name: 'ojdbc6', version: '12.1.0.1-atlassian-hosted'
+	
 	example "com.zaxxer:HikariCP:2.6+"
 	example 'org.dalesbred:dalesbred:1.2.+'
 }

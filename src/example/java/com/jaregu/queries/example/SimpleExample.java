@@ -95,7 +95,7 @@ public class SimpleExample {
 			return "-- query1\nselect 1;";
 		});
 
-		queries = Queries.ofSources(createSource, populateSource, sourceOfResource(SimpleExample.class), otherSource);
+		queries = Queries.of(createSource, populateSource, sourceOfResource(SimpleExample.class), otherSource);
 	}
 
 	private void createTables() {

@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.assertj.core.groups.Tuple;
 import org.dalesbred.Database;
 import org.dalesbred.query.SqlQuery;
 import org.junit.Before;
@@ -15,33 +17,75 @@ import org.junit.Test;
 
 import com.jaregu.database.queries.Queries;
 import com.jaregu.database.queries.RetativeQueries;
+import com.jaregu.database.queries.building.ParameterBindingBuilder;
+import com.jaregu.database.queries.building.ParameterBindingCollectionBuilderImpl.RestParametersType;
 import com.jaregu.database.queries.building.Query;
+import com.jaregu.database.queries.building.QueryBuildException;
 import com.jaregu.database.queries.compiling.PreparedQuery;
+import com.jaregu.database.queries.ext.PageableSearch;
+import com.jaregu.database.queries.ext.SortableSearch;
 import com.jaregu.database.queries.parsing.QueriesSource;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
+import oracle.jdbc.driver.OracleDriver;
 
 public class SampleQueries {
 
 	private static boolean initialized = false;
 	private Database db;
+	private QueriesSource source;
 	private Queries queries;
 	private RetativeQueries rq;
 
 	@Before
 	public void setUp() {
-		db = new MemoryDb().getDb();
-		QueriesSource source = Queries.sourceOfResource("com/jaregu/queries/example/sample-queries.sql");
-		queries = Queries.ofSources(source);
+		db = createLocalOracleDb(); // new MemoryDb().getDb(); //
+									// createLocalMariaDb();
+		source = Queries.sourceOfResource("com/jaregu/queries/example/sample-queries.sql");
+		queries = Queries.of(source);
 		rq = queries.ofSource(source.getId());
 
+		// oracle.jdbc.driver.OracleDriver aa = new OracleDriver();
+
 		if (!initialized) {
-			createDummyTable();
-			insertDummyData();
+			// createDummyTableOracle();
+			// insertDummyData();
 			initialized = true;
 		}
 	}
 
+	private Database createLocalMariaDb() {
+		HikariConfig config = new HikariConfig();
+		config.setJdbcUrl(
+				"jdbc:mariadb://localhost:3406/test?autoReconnect=true&?useUnicode=yes&characterEncoding=UTF-8");
+		config.setUsername("test");
+		config.setPassword("test");
+		config.setAutoCommit(false);
+		config.setDriverClassName("org.mariadb.jdbc.Driver");
+		Database mariaDb = new Database(new HikariDataSource(config));
+		return mariaDb;
+	}
+
+	private Database createLocalOracleDb() {
+		HikariConfig config = new HikariConfig();
+		config.setJdbcUrl("jdbc:oracle:thin:@localhost:1521:XE");
+		config.setUsername("system");
+		config.setPassword("mayerX79");
+		config.setAutoCommit(false);
+		config.setDriverClassName("oracle.jdbc.driver.OracleDriver");
+		Database oracleDb = new Database(new HikariDataSource(config));
+		return oracleDb;
+	}
+
 	public void createDummyTable() {
 		db.update(rq.get("create-dummy").build().getSql());
+	}
+
+	public void createDummyTableOracle() {
+		String sql = rq.get("create-dummy-oracle").build().getSql();
+		System.out.println(sql);
+		db.update(sql);
 	}
 
 	public void insertDummyData() {
@@ -111,14 +155,58 @@ public class SampleQueries {
 		assertThat(query2.getSql()).doesNotContain("and foo = ?").containsSequence("and (bar = ?");
 		List<Dummy> rows2 = db.findAll(Dummy.class, toQuery(query2));
 		assertThat(rows2).extracting("foo", "bar").containsOnly(tuple(6, "3-6"));
+
+		// it is error if there is no parameter at all named bar
+		assertThatThrownBy(() -> preparedQuery.build("foo", 5)).isInstanceOf(QueryBuildException.class);
 	}
 
 	@Test
-	public void inClauseCollectionSupport() {
-		Query query = rq.get("in-clause-support").build("collectionOfIds", Arrays.asList(1, 3));
-		assertThat(query.getSql()).containsSequence("where id IN (?, ?");
+	public void inClauseCollectionSupportAnonymous() {
+		// by default there is no in clause support but it is easy to add some
+		RetativeQueries rq = Queries.of(
+				Queries.configBuilder()
+						.parameterBindingBuilder(ParameterBindingBuilder
+								.createWithInClauseSupport(Arrays.asList(1, 3, 10), RestParametersType.NULL))
+						.build(),
+				source).ofSource(source.getId());
+
+		Query query = rq.get("in-clause-support-anonymous").build((Object) Arrays.asList(1, 3));
+		assertThat(query.getSql()).containsSequence("(?,?,?)");
+		assertThat(query.getParameters()).containsExactly(1, 3, null);
 		List<Dummy> rows = db.findAll(Dummy.class, toQuery(query));
 		assertThat(rows).extracting("id", "bar").containsOnly(tuple(1, "1-4"), tuple(3, "3-6"));
+	}
+
+	@Test
+	public void inClauseCollectionSupportNamed() {
+		// by default there is no in clause support but it is easy to add some
+		RetativeQueries rq = Queries
+				.of(Queries.configBuilder()
+						.parameterBindingBuilder(ParameterBindingBuilder
+								.createWithInClauseSupport(Arrays.asList(1, 3, 10), RestParametersType.LAST_VALUE))
+						.build(), source)
+				.ofSource(source.getId());
+
+		Query query = rq.get("in-clause-support-named").build("collectionOfIds", Arrays.asList(1, 3));
+		assertThat(query.getSql()).containsSequence("(?,?,?)");
+		assertThat(query.getParameters()).containsExactly(1, 3, 3);
+		List<Dummy> rows = db.findAll(Dummy.class, toQuery(query));
+		assertThat(rows).extracting("id", "bar").containsOnly(tuple(1, "1-4"), tuple(3, "3-6"));
+	}
+
+	@Test
+	public void inClauseCollectionSupportOptionalNamed() {
+		// by default there is no in clause support but it is easy to add some
+		RetativeQueries rq = Queries
+				.of(Queries.configBuilder().parameterBindingBuilder(ParameterBindingBuilder
+						.createWithInClauseSupport(Arrays.asList(4), RestParametersType.LAST_VALUE)).build(), source)
+				.ofSource(source.getId());
+
+		Query query = rq.get("in-clause-support-optional-named").build("collectionOfIds", Arrays.asList(1));
+		assertThat(query.getSql()).containsSequence("(?,?,?,?");
+		assertThat(query.getParameters()).containsExactly(1, 1, 1, 1);
+		List<Dummy> rows = db.findAll(Dummy.class, toQuery(query));
+		assertThat(rows).extracting("id", "bar").containsOnly(tuple(1, "1-4"));
 	}
 
 	@Test
@@ -128,6 +216,7 @@ public class SampleQueries {
 
 		Query query = preparedQuery.build("foo", 4);
 		assertThat(query.getSql()).containsSequence("and foo > ?");
+		assertThat(query.getParameters()).containsOnly(5);
 		// should be only one row with foo greater than 5
 		List<Integer> ids = db.findAll(Integer.class, toQuery(query));
 		assertThat(ids).containsExactly(3);
@@ -141,6 +230,73 @@ public class SampleQueries {
 		assertThat(query3.getSql()).doesNotContain("and foo > ?");
 		List<Integer> ids3 = db.findAll(Integer.class, toQuery(query3));
 		assertThat(ids3).containsExactly(1, 2, 3);
+	}
+
+	@Test
+	public void searchExample() {
+		PreparedQuery searchQuery = rq.get("search-example");
+		DummySearch search = new DummySearch();
+		Query noCriterionsQuery = searchQuery.build(search);
+		assertThat(noCriterionsQuery.getSql()).doesNotContain("like").doesNotContain("LOWER");
+		// parameter contains only offset and limit
+		assertThat(noCriterionsQuery.getParameters()).containsOnly(0, 10);
+
+		search.setBarEq("");
+		search.setBarStarts("");
+		search.setBarContains("");
+		Query noCriterionsQuery2 = searchQuery.build(search);
+		assertThat(noCriterionsQuery2.getSql()).doesNotContain("like").doesNotContain("LOWER");
+		// parameter contains only offset and limit
+		assertThat(noCriterionsQuery2.getParameters()).containsOnly(0, 10);
+
+		search.setBarEq("equals");
+		search.setBarStarts("STARTING");
+		search.setBarContains("Containing");
+		Query query = searchQuery.build(search);
+		assertThat(query.getSql()).contains("LOWER", "like");
+		assertThat(query.getParameters()).containsOnly("equals", "STARTING%", "%Containing%", 0, 10);
+	}
+
+	@Test
+	public void optionalBlocks() {
+		PreparedQuery blockQuery = rq.get("optional-blocks");
+		Query noCriterionsQuery = blockQuery.build("addBlock", null);
+		assertThat(noCriterionsQuery.getSql()).doesNotContain("inside optional block")
+				.doesNotContain("inside nested block");
+		assertThat(noCriterionsQuery.getParameters()).isEmpty();
+
+		// bar, addNested variables is needed, so there is error
+		assertThatThrownBy(() -> blockQuery.build("addBlock", true)).isInstanceOf(QueryBuildException.class);
+
+		// block is added if addBlock is not null, so will be added even with
+		// false value
+		Query queryWithBlock = blockQuery.build("addBlock", false, "bar", null, "addNested", null);
+		assertThat(queryWithBlock.getSql()).contains("inside optional block").doesNotContain("inside nested block")
+				.doesNotContain("dd.foo =").doesNotContain("dd.bar =");
+		assertThat(queryWithBlock.getParameters()).isEmpty();
+
+		Query queryWithBlock1 = blockQuery.build("addBlock", false, "bar", "2-5", "addNested", null);
+		assertThat(queryWithBlock1.getSql()).contains("inside optional block", "dd.bar = ?")
+				.doesNotContain("inside nested block").doesNotContain("dd.foo =");
+		assertThat(queryWithBlock1.getParameters()).containsOnly("2-5");
+
+		Query queryWithBlock2 = blockQuery.build("addBlock", false, "bar", "2-5", "addNested", false);
+		assertThat(queryWithBlock2.getSql()).contains("inside optional block", "dd.bar = ?")
+				.doesNotContain("inside nested block").doesNotContain("dd.foo =");
+		assertThat(queryWithBlock2.getParameters()).containsOnly("2-5");
+
+		// foo variable is needed, so there is error
+		assertThatThrownBy(() -> blockQuery.build("addBlock", false, "bar", "2-5", "addNested", true))
+				.isInstanceOf(QueryBuildException.class);
+
+		Query queryWithBlock3 = blockQuery.build("addBlock", false, "bar", "2-5", "addNested", true, "foo", 5);
+		assertThat(queryWithBlock3.getSql()).contains("inside optional block", "dd.bar = ?", "inside nested block",
+				"dd.foo = ?");
+		assertThat(queryWithBlock3.getParameters()).containsOnly("2-5", 5);
+
+		System.out.println(queryWithBlock3.getSql());
+		List<Dummy> rows = db.findAll(Dummy.class, toQuery(queryWithBlock3));
+		assertThat(rows).extracting("id", "bar").containsOnly(tuple(2, "2-5"));
 	}
 
 	private SqlQuery toQuery(Query q) {
@@ -219,6 +375,76 @@ public class SampleQueries {
 			if (id != other.id)
 				return false;
 			return true;
+		}
+	}
+
+	public static class DummySearch implements PageableSearch, SortableSearch {
+
+		private Integer foo;
+		private String barEq;
+		private String barStarts;
+		private String barContains;
+		private int offset = 0;
+		private int limit = 10;
+		private List<SortProperty> sortProperties = new ArrayList<>();
+
+		@Override
+		public List<SortProperty> getSortProperties() {
+			return sortProperties;
+		}
+
+		@Override
+		public int getOffset() {
+			return offset;
+		}
+
+		public void setOffset(int offset) {
+			this.offset = offset;
+		}
+
+		@Override
+		public int getLimit() {
+			return limit;
+		}
+
+		public void setLimit(int limit) {
+			this.limit = limit;
+		}
+
+		public String getBarEq() {
+			return barEq;
+		}
+
+		public void setBarEq(String barEq) {
+			this.barEq = barEq;
+		}
+
+		public String getBarStarts() {
+			return barStarts;
+		}
+
+		public void setBarStarts(String barStarts) {
+			this.barStarts = barStarts;
+		}
+
+		public String getBarContains() {
+			return barContains;
+		}
+
+		public void setBarContains(String barContains) {
+			this.barContains = barContains;
+		}
+
+		public Integer getFoo() {
+			return foo;
+		}
+
+		public void setFoo(Integer foo) {
+			this.foo = foo;
+		}
+
+		public void setSortProperties(List<SortProperty> sortProperties) {
+			this.sortProperties = sortProperties;
 		}
 	}
 }

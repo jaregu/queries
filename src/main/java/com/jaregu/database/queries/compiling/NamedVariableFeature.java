@@ -4,7 +4,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import com.jaregu.database.queries.QueriesContext;
 import com.jaregu.database.queries.building.NamedResolver;
+import com.jaregu.database.queries.building.ParameterBindingBuilder;
 import com.jaregu.database.queries.building.ParametersResolver;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
@@ -29,10 +31,11 @@ public class NamedVariableFeature implements QueryCompilerFeature {
 	public Result compile(Source source, Compiler compiler) {
 		List<ParsedQueryPart> sourceParts = source.getParts();
 		ParsedQueryPart variable = sourceParts.get(0);
+		ParameterBindingBuilder bindingBuilder = QueriesContext.getCurrent().getConfig().getParameterBindingBuilder();
 		return new Result() {
 			@Override
 			public List<PreparedQueryPart> getParts() {
-				return Collections.singletonList(new NamedVariablePart(variable.getVariableName()));
+				return Collections.singletonList(new NamedVariablePart(variable.getVariableName(), bindingBuilder));
 			}
 		};
 	}
@@ -40,17 +43,22 @@ public class NamedVariableFeature implements QueryCompilerFeature {
 	private static class NamedVariablePart implements PreparedQueryPart {
 
 		private String variableName;
+		private ParameterBindingBuilder bindingBuilder;
 
-		public NamedVariablePart(String variableName) {
+		public NamedVariablePart(String variableName, ParameterBindingBuilder bindingBuilder) {
 			this.variableName = variableName;
+			this.bindingBuilder = bindingBuilder;
 		}
 
 		@Override
 		public Result build(ParametersResolver resolver) {
 
 			NamedResolver namedParameters = resolver.getNamedResolver();
-			return new PreparedQueryPartResultImpl(Optional.of("?"),
-					Collections.singletonList(namedParameters.getValue(variableName)), Collections.emptyMap());
+			Object value = namedParameters.getValue(variableName);
+			ParameterBindingBuilder.Result result = bindingBuilder.process(value);
+
+			return new PreparedQueryPartResultImpl(Optional.of(result.getSql()), result.getParemeters(),
+					Collections.emptyMap());
 		}
 	}
 }
