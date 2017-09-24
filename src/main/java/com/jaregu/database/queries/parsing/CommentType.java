@@ -62,16 +62,16 @@ public enum CommentType {
 	 * 
 	 * @param comment
 	 * @return
-	 * @throws QueriesParseException
+	 * @throws QueryParseException
 	 *             if comment is not this type of comment
 	 *             ({@link #matches(String)} is false)
 	 */
-	public String unwrap(String comment) throws QueriesParseException {
+	public String unwrap(String comment) throws QueryParseException {
 		if (matches(comment)) {
 			return comment.substring(startSequence.length(), (endingRequired || comment.endsWith(endSequence)
 					? comment.length() - endSequence.length() : comment.length())).trim();
 		} else {
-			throw new QueriesParseException("Passed string: " + comment + " is not SQL comment of this type!");
+			throw new QueryParseException("Passed string: " + comment + " is not SQL comment of this type!");
 		}
 	}
 
@@ -81,9 +81,9 @@ public enum CommentType {
 	 * 
 	 * @param comment
 	 * @return
-	 * @throws QueriesParseException
+	 * @throws QueryParseException
 	 */
-	public String wrap(String text) throws QueriesParseException {
+	public String wrap(String text) throws QueryParseException {
 		return startSequence + text + endSequence;
 	}
 

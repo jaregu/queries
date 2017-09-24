@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.building.IteratorResolver;
@@ -14,18 +15,18 @@ import com.jaregu.database.queries.building.ParametersResolver;
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.building.QueryImpl;
 import com.jaregu.database.queries.compiling.PreparedQueryPart.Result;
+import com.jaregu.database.queries.dialect.Dialect;
 
-class PreparedQueryImpl implements PreparedQuery {
+final class PreparedQueryImpl implements PreparedQuery {
 
-	// private final static Logger LOGGER =
-	// LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+	final private QueryId id;
+	final private List<PreparedQueryPart> parts;
+	final private Dialect dialect;
 
-	private QueryId id;
-	private List<PreparedQueryPart> parts;
-
-	public PreparedQueryImpl(QueryId id, List<PreparedQueryPart> parts) {
+	PreparedQueryImpl(QueryId id, List<PreparedQueryPart> parts, Dialect dialect) {
 		this.id = id;
 		this.parts = parts;
+		this.dialect = dialect;
 	}
 
 	@Override
@@ -44,12 +45,12 @@ class PreparedQueryImpl implements PreparedQuery {
 	}
 
 	@Override
-	public Query build(Map<String, Object> params) {
+	public Query build(Map<String, ?> params) {
 		return build(ParametersResolver.ofMap(params));
 	}
 
 	@Override
-	public Query build(List<Object> params) {
+	public Query build(List<?> params) {
 		return build(ParametersResolver.ofList(params));
 	}
 
@@ -113,7 +114,7 @@ class PreparedQueryImpl implements PreparedQuery {
 	}
 
 	@Override
-	public Query build(Iterable<Object> resolver) {
+	public Query build(Iterable<?> resolver) {
 		return build(ParametersResolver.ofIterable(resolver));
 	}
 
@@ -128,6 +129,32 @@ class PreparedQueryImpl implements PreparedQuery {
 			allParameters.addAll(result.getParameters());
 			allAttributes.putAll(result.getAttributes());
 		}
-		return new QueryImpl(sql.toString(), allParameters, allAttributes);
+		return new QueryImpl(sql.toString(), allParameters, allAttributes, dialect);
+	}
+
+	@Override
+	public String toString() {
+		String idToString = id.toString();
+		StringBuilder sb = new StringBuilder(idToString.length() + 20);
+		sb.append("PreparedQuery{id: ").append(idToString).append("}");
+		return sb.toString();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this)
+			return true;
+
+		if (obj instanceof PreparedQueryImpl) {
+			PreparedQueryImpl other = (PreparedQueryImpl) obj;
+			return id.equals(other.id);
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id);
 	}
 }

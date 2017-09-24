@@ -26,6 +26,7 @@ import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Compiler;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Result;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Source;
+import com.jaregu.database.queries.dialect.Dialects;
 import com.jaregu.database.queries.parsing.ParsedQuery;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
@@ -70,7 +71,7 @@ public class QueryCompilerImplTest {
 	}
 
 	private Cafe open(QueryCompilerFeature... eaters) {
-		QueryCompilerImpl kitchen = new QueryCompilerImpl(Arrays.asList(eaters));
+		QueryCompilerImpl kitchen = new QueryCompilerImpl(Arrays.asList(eaters), Dialects.defaultDialect());
 		return (food) -> serve(cook(kitchen, food));
 	}
 

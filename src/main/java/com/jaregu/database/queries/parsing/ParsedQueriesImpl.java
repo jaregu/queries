@@ -36,7 +36,7 @@ public class ParsedQueriesImpl implements ParsedQueries {
 	public ParsedQuery get(QueryId id) {
 		ParsedQuery query;
 		if ((query = queries.get(id)) == null) {
-			throw new QueriesParseException("Uknown query Id: " + id);
+			throw new QueryParseException("Uknown query Id: " + id);
 		}
 		return query;
 	}

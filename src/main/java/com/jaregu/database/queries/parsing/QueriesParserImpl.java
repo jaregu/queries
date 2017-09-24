@@ -12,7 +12,7 @@ import com.jaregu.database.queries.common.Lexer;
 import com.jaregu.database.queries.common.StringSplitter;
 import com.jaregu.database.queries.common.Lexer.LexerPattern;
 
-public class QueriesParserImpl implements QueriesParser {
+class QueriesParserImpl implements QueriesParser {
 
 	private static final LexerPattern HYPEN_COMMENT = Lexer.newPattern().stopAfter("\n").stopAtEof();
 	private static final LexerPattern BLOCK_COMMENT = Lexer.newPattern().stopAfter("*/");
@@ -23,6 +23,9 @@ public class QueriesParserImpl implements QueriesParser {
 			.skipAllBetween("\"", "\"").skipSequence("::").stopAfterAnyOf(";").stopBeforeAnyOf("--", "/*", ":", "?")
 			.stopAtEof();
 	private static final StringSplitter BREAK_TO_LINES = StringSplitter.on('\n').includeSeparator(true);
+
+	QueriesParserImpl() {
+	}
 
 	@Override
 	public ParsedQueries parse(QueriesSource source) {
@@ -89,7 +92,7 @@ public class QueriesParserImpl implements QueriesParser {
 		}
 
 		if (queryId == null) {
-			throw new QueriesParseException(
+			throw new QueryParseException(
 					"Can't get query ID, there is no comments in this SQL query, query source id (" + sourceId + ")!\n"
 							+ parts);
 		}

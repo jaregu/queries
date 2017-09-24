@@ -24,18 +24,6 @@ public class QueriesCacheNoCache implements QueriesCache {
 		return querySupplier.apply(queryId);
 	}
 
-	@Override
-	public void invalidate(QueryId queryId) {
-	}
-
-	@Override
-	public void invalidate(SourceId sourceId) {
-	}
-
-	@Override
-	public void invalidateAll() {
-	}
-
 	public static QueriesCache getInstance() {
 		return INSTANCE;
 	}

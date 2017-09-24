@@ -3,7 +3,7 @@ package com.jaregu.database.queries.building;
 import java.util.Collections;
 import java.util.List;
 
-public class ParameterBindingBuilderImpl implements ParameterBindingBuilder {
+public class ParameterBindingBuilderImpl implements ParameterBinder {
 
 	@Override
 	public Result process(Object parameter) {

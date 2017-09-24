@@ -7,15 +7,20 @@ import java.util.Optional;
 
 import com.jaregu.database.queries.building.ParametersResolver;
 
-public class ConstantPart implements PreparedQueryPart {
+final class ConstantPart implements PreparedQueryPart {
 
-	private String constant;
-	private Result result;
+	private final String constant;
+	private final Result result;
 
-	public ConstantPart(String constant) {
+	ConstantPart(String constant) {
 		this.constant = requireNonNull(constant);
 		this.result = new PreparedQueryPartResultImpl(Optional.of(constant), Collections.emptyList(),
 				Collections.emptyMap());
+	}
+
+	@Override
+	public String toString() {
+		return constant;
 	}
 
 	@Override

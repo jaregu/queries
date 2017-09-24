@@ -4,9 +4,9 @@ import java.util.Iterator;
 
 final class IteratorResolverImpl implements IteratorResolver {
 
-	private Iterator<Object> iterator;
+	private Iterator<?> iterator;
 
-	IteratorResolverImpl(Iterable<Object> parameters) {
+	IteratorResolverImpl(Iterable<?> parameters) {
 		iterator = parameters.iterator();
 	}
 

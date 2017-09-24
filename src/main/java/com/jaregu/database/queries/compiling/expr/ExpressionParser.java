@@ -15,7 +15,7 @@ public interface ExpressionParser {
 
 	List<Expression> parse(String expression) throws ExpressionParseException;
 
-	static ExpressionParser createDefault() {
+	static ExpressionParser defaultParser() {
 		return new ExpressionParserImpl();
 	}
 }

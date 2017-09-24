@@ -20,7 +20,10 @@ import com.jaregu.database.queries.parsing.ParsedQueryPart;
  * 
  * and adds them as constant SQLs
  */
-public class IgnoredCommentFeature implements QueryCompilerFeature {
+final class IgnoredCommentFeature implements QueryCompilerFeature {
+
+	IgnoredCommentFeature() {
+	}
 
 	@Override
 	public boolean isCompilable(Source source) {

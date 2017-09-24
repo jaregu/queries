@@ -16,7 +16,7 @@ public interface QueriesSource {
 
 	String getContent();
 
-	public static QueriesSource of(SourceId sourceId, Supplier<String> contentSupplier) {
+	public static QueriesSource ofContent(SourceId sourceId, Supplier<String> contentSupplier) {
 		return new QueriesSourceImpl(sourceId, contentSupplier);
 	}
 
@@ -33,16 +33,16 @@ public interface QueriesSource {
 	 * @param clazz
 	 * @return
 	 */
-	public static QueriesSource ofResource(Class<?> clazz) {
+	public static QueriesSource ofClass(Class<?> clazz) {
 		return new QueriesSourceImpl(SourceId.ofClass(clazz), () -> {
 			String resourceName = clazz.getSimpleName() + ".sql";
 			try (InputStream inputStream = clazz.getResourceAsStream(resourceName)) {
 				if (inputStream == null) {
-					throw new QueriesParseException("Can't find resource with name: " + resourceName);
+					throw new QueryParseException("Can't find resource with name: " + resourceName);
 				}
 				return StreamReader.toUtf8String(inputStream);
 			} catch (IOException exc) {
-				throw new QueriesParseException("Error while reading from resource: " + resourceName, exc);
+				throw new QueryParseException("Error while reading from resource: " + resourceName, exc);
 			}
 		});
 	}
@@ -63,11 +63,11 @@ public interface QueriesSource {
 		return new QueriesSourceImpl(SourceId.ofResource(path), () -> {
 			try (InputStream inputStream = QueriesSource.class.getClassLoader().getResourceAsStream(path)) {
 				if (inputStream == null) {
-					throw new QueriesParseException("Can't find resource with path: " + path);
+					throw new QueryParseException("Can't find resource with path: " + path);
 				}
 				return StreamReader.toUtf8String(inputStream);
 			} catch (IOException exc) {
-				throw new QueriesParseException("Error while reading from resource: " + path, exc);
+				throw new QueryParseException("Error while reading from resource: " + path, exc);
 			}
 		});
 	}

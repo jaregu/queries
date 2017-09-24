@@ -30,7 +30,7 @@ class ParsedQueryPartImpl implements ParsedQueryPart {
 
 	@Override
 	public CommentType getCommentType() {
-		return commentType.orElseThrow(() -> new QueriesParseException("This is not comment part!"));
+		return commentType.orElseThrow(() -> new QueryParseException("This is not comment part!"));
 	}
 
 	@Override
@@ -40,7 +40,7 @@ class ParsedQueryPartImpl implements ParsedQueryPart {
 
 	@Override
 	public String getVariableName() {
-		return variableName.orElseThrow(() -> new QueriesParseException("This is not binded variable part!"));
+		return variableName.orElseThrow(() -> new QueryParseException("This is not binded variable part!"));
 	}
 
 	@Override

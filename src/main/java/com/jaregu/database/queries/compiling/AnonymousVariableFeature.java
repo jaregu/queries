@@ -2,11 +2,11 @@ package com.jaregu.database.queries.compiling;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
-import com.jaregu.database.queries.QueriesContext;
 import com.jaregu.database.queries.building.IteratorResolver;
-import com.jaregu.database.queries.building.ParameterBindingBuilder;
+import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.building.ParametersResolver;
 import com.jaregu.database.queries.building.QueryBuildException;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
@@ -20,7 +20,18 @@ import com.jaregu.database.queries.parsing.ParsedQueryPart;
  * [SQL] ? [SQL]
  * </pre>
  */
-public class AnonymousVariableFeature implements QueryCompilerFeature {
+final class AnonymousVariableFeature implements QueryCompilerFeature {
+
+	private final Result result;
+
+	AnonymousVariableFeature(ParameterBinder parameterBinder) {
+		this.result = new Result() {
+			@Override
+			public List<PreparedQueryPart> getParts() {
+				return Collections.singletonList(new AnonymousVariablePart(parameterBinder));
+			}
+		};
+	}
 
 	@Override
 	public boolean isCompilable(Source source) {
@@ -30,21 +41,15 @@ public class AnonymousVariableFeature implements QueryCompilerFeature {
 
 	@Override
 	public Result compile(Source source, Compiler compiler) {
-		ParameterBindingBuilder bindingBuilder = QueriesContext.getCurrent().getConfig().getParameterBindingBuilder();
-		return new Result() {
-			@Override
-			public List<PreparedQueryPart> getParts() {
-				return Collections.singletonList(new AnonymousVariablePart(bindingBuilder));
-			}
-		};
+		return result;
 	}
 
-	protected static class AnonymousVariablePart implements PreparedQueryPart {
+	private static final class AnonymousVariablePart implements PreparedQueryPart {
 
-		private ParameterBindingBuilder bindingBuilder;
+		private final ParameterBinder parameterBinder;
 
-		public AnonymousVariablePart(ParameterBindingBuilder bindingBuilder) {
-			this.bindingBuilder = bindingBuilder;
+		private AnonymousVariablePart(ParameterBinder parameterBinder) {
+			this.parameterBinder = parameterBinder;
 		}
 
 		@Override
@@ -56,10 +61,28 @@ public class AnonymousVariableFeature implements QueryCompilerFeature {
 						"Can't resolve parameter for for binding! Parameters iterator was empty or is exausted!");
 			}
 			Object value = iteratorParameters.next();
-			ParameterBindingBuilder.Result result = bindingBuilder.process(value);
+			ParameterBinder.Result result = parameterBinder.process(value);
 
 			return new PreparedQueryPartResultImpl(Optional.of(result.getSql()), result.getParemeters(),
 					Collections.emptyMap());
+		}
+
+		@Override
+		public String toString() {
+			return "?";
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this)
+				return true;
+
+			return false;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(parameterBinder);
 		}
 	}
 }

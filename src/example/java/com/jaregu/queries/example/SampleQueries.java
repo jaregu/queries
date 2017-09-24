@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.assertj.core.groups.Tuple;
 import org.dalesbred.Database;
 import org.dalesbred.query.SqlQuery;
 import org.junit.Before;
@@ -17,18 +16,17 @@ import org.junit.Test;
 
 import com.jaregu.database.queries.Queries;
 import com.jaregu.database.queries.RetativeQueries;
-import com.jaregu.database.queries.building.ParameterBindingBuilder;
 import com.jaregu.database.queries.building.ParameterBindingCollectionBuilderImpl.RestParametersType;
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.building.QueryBuildException;
 import com.jaregu.database.queries.compiling.PreparedQuery;
+import com.jaregu.database.queries.ext.OffsetLimit;
 import com.jaregu.database.queries.ext.PageableSearch;
+import com.jaregu.database.queries.ext.SortProperties;
 import com.jaregu.database.queries.ext.SortableSearch;
 import com.jaregu.database.queries.parsing.QueriesSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-
-import oracle.jdbc.driver.OracleDriver;
 
 public class SampleQueries {
 
@@ -42,7 +40,7 @@ public class SampleQueries {
 	public void setUp() {
 		db = createLocalOracleDb(); // new MemoryDb().getDb(); //
 									// createLocalMariaDb();
-		source = Queries.sourceOfResource("com/jaregu/queries/example/sample-queries.sql");
+		source = QueriesSource.ofResource("com/jaregu/queries/example/sample-queries.sql");
 		queries = Queries.of(source);
 		rq = queries.ofSource(source.getId());
 
@@ -163,16 +161,13 @@ public class SampleQueries {
 	@Test
 	public void inClauseCollectionSupportAnonymous() {
 		// by default there is no in clause support but it is easy to add some
-		RetativeQueries rq = Queries.of(
-				Queries.configBuilder()
-						.parameterBindingBuilder(ParameterBindingBuilder
-								.createWithInClauseSupport(Arrays.asList(1, 3, 10), RestParametersType.NULL))
-						.build(),
-				source).ofSource(source.getId());
+		RetativeQueries rq = Queries.builder()
+				.binderWithCollectionSupport(Arrays.asList(1, 3, 10), RestParametersType.NULL).source(source).build()
+				.ofSource(source.getId());
 
 		Query query = rq.get("in-clause-support-anonymous").build((Object) Arrays.asList(1, 3));
 		assertThat(query.getSql()).containsSequence("(?,?,?)");
-		assertThat(query.getParameters()).containsExactly(1, 3, null);
+		assertThat(new ArrayList<Object>(query.getParameters())).containsExactly(1, 3, null);
 		List<Dummy> rows = db.findAll(Dummy.class, toQuery(query));
 		assertThat(rows).extracting("id", "bar").containsOnly(tuple(1, "1-4"), tuple(3, "3-6"));
 	}
@@ -180,16 +175,13 @@ public class SampleQueries {
 	@Test
 	public void inClauseCollectionSupportNamed() {
 		// by default there is no in clause support but it is easy to add some
-		RetativeQueries rq = Queries
-				.of(Queries.configBuilder()
-						.parameterBindingBuilder(ParameterBindingBuilder
-								.createWithInClauseSupport(Arrays.asList(1, 3, 10), RestParametersType.LAST_VALUE))
-						.build(), source)
-				.ofSource(source.getId());
+		RetativeQueries rq = Queries.builder()
+				.binderWithCollectionSupport(Arrays.asList(1, 3, 10), RestParametersType.LAST_VALUE).source(source)
+				.build().ofSource(source.getId());
 
 		Query query = rq.get("in-clause-support-named").build("collectionOfIds", Arrays.asList(1, 3));
 		assertThat(query.getSql()).containsSequence("(?,?,?)");
-		assertThat(query.getParameters()).containsExactly(1, 3, 3);
+		assertThat(new ArrayList<Object>(query.getParameters())).containsExactly(1, 3, 3);
 		List<Dummy> rows = db.findAll(Dummy.class, toQuery(query));
 		assertThat(rows).extracting("id", "bar").containsOnly(tuple(1, "1-4"), tuple(3, "3-6"));
 	}
@@ -197,14 +189,14 @@ public class SampleQueries {
 	@Test
 	public void inClauseCollectionSupportOptionalNamed() {
 		// by default there is no in clause support but it is easy to add some
-		RetativeQueries rq = Queries
-				.of(Queries.configBuilder().parameterBindingBuilder(ParameterBindingBuilder
-						.createWithInClauseSupport(Arrays.asList(4), RestParametersType.LAST_VALUE)).build(), source)
+		RetativeQueries rq = Queries.builder()
+				.binderWithCollectionSupport(Arrays.asList(4), RestParametersType.LAST_VALUE).source(source).build()
 				.ofSource(source.getId());
 
 		Query query = rq.get("in-clause-support-optional-named").build("collectionOfIds", Arrays.asList(1));
 		assertThat(query.getSql()).containsSequence("(?,?,?,?");
-		assertThat(query.getParameters()).containsExactly(1, 1, 1, 1);
+
+		assertThat(new ArrayList<Object>(query.getParameters())).containsExactly(1, 1, 1, 1);
 		List<Dummy> rows = db.findAll(Dummy.class, toQuery(query));
 		assertThat(rows).extracting("id", "bar").containsOnly(tuple(1, "1-4"));
 	}
@@ -216,7 +208,7 @@ public class SampleQueries {
 
 		Query query = preparedQuery.build("foo", 4);
 		assertThat(query.getSql()).containsSequence("and foo > ?");
-		assertThat(query.getParameters()).containsOnly(5);
+		assertThat(new ArrayList<Object>(query.getParameters())).containsOnly(5);
 		// should be only one row with foo greater than 5
 		List<Integer> ids = db.findAll(Integer.class, toQuery(query));
 		assertThat(ids).containsExactly(3);
@@ -236,10 +228,12 @@ public class SampleQueries {
 	public void searchExample() {
 		PreparedQuery searchQuery = rq.get("search-example");
 		DummySearch search = new DummySearch();
+		search.setOffset(0);
+		search.setLimit(10);
 		Query noCriterionsQuery = searchQuery.build(search);
 		assertThat(noCriterionsQuery.getSql()).doesNotContain("like").doesNotContain("LOWER");
 		// parameter contains only offset and limit
-		assertThat(noCriterionsQuery.getParameters()).containsOnly(0, 10);
+		assertThat(new ArrayList<Object>(noCriterionsQuery.getParameters())).containsOnly(0, 10);
 
 		search.setBarEq("");
 		search.setBarStarts("");
@@ -247,14 +241,15 @@ public class SampleQueries {
 		Query noCriterionsQuery2 = searchQuery.build(search);
 		assertThat(noCriterionsQuery2.getSql()).doesNotContain("like").doesNotContain("LOWER");
 		// parameter contains only offset and limit
-		assertThat(noCriterionsQuery2.getParameters()).containsOnly(0, 10);
+		assertThat(new ArrayList<Object>(noCriterionsQuery2.getParameters())).containsOnly(0, 10);
 
 		search.setBarEq("equals");
 		search.setBarStarts("STARTING");
 		search.setBarContains("Containing");
 		Query query = searchQuery.build(search);
 		assertThat(query.getSql()).contains("LOWER", "like");
-		assertThat(query.getParameters()).containsOnly("equals", "STARTING%", "%Containing%", 0, 10);
+		assertThat(new ArrayList<Object>(query.getParameters())).containsOnly("equals", "STARTING%", "%Containing%", 0,
+				10);
 	}
 
 	@Test
@@ -278,12 +273,12 @@ public class SampleQueries {
 		Query queryWithBlock1 = blockQuery.build("addBlock", false, "bar", "2-5", "addNested", null);
 		assertThat(queryWithBlock1.getSql()).contains("inside optional block", "dd.bar = ?")
 				.doesNotContain("inside nested block").doesNotContain("dd.foo =");
-		assertThat(queryWithBlock1.getParameters()).containsOnly("2-5");
+		assertThat(new ArrayList<Object>(queryWithBlock1.getParameters())).containsOnly("2-5");
 
 		Query queryWithBlock2 = blockQuery.build("addBlock", false, "bar", "2-5", "addNested", false);
 		assertThat(queryWithBlock2.getSql()).contains("inside optional block", "dd.bar = ?")
 				.doesNotContain("inside nested block").doesNotContain("dd.foo =");
-		assertThat(queryWithBlock2.getParameters()).containsOnly("2-5");
+		assertThat(new ArrayList<Object>(queryWithBlock2.getParameters())).containsOnly("2-5");
 
 		// foo variable is needed, so there is error
 		assertThatThrownBy(() -> blockQuery.build("addBlock", false, "bar", "2-5", "addNested", true))
@@ -292,7 +287,7 @@ public class SampleQueries {
 		Query queryWithBlock3 = blockQuery.build("addBlock", false, "bar", "2-5", "addNested", true, "foo", 5);
 		assertThat(queryWithBlock3.getSql()).contains("inside optional block", "dd.bar = ?", "inside nested block",
 				"dd.foo = ?");
-		assertThat(queryWithBlock3.getParameters()).containsOnly("2-5", 5);
+		assertThat(new ArrayList<Object>(queryWithBlock3.getParameters())).containsOnly("2-5", 5);
 
 		System.out.println(queryWithBlock3.getSql());
 		List<Dummy> rows = db.findAll(Dummy.class, toQuery(queryWithBlock3));
@@ -384,32 +379,8 @@ public class SampleQueries {
 		private String barEq;
 		private String barStarts;
 		private String barContains;
-		private int offset = 0;
-		private int limit = 10;
-		private List<SortProperty> sortProperties = new ArrayList<>();
-
-		@Override
-		public List<SortProperty> getSortProperties() {
-			return sortProperties;
-		}
-
-		@Override
-		public int getOffset() {
-			return offset;
-		}
-
-		public void setOffset(int offset) {
-			this.offset = offset;
-		}
-
-		@Override
-		public int getLimit() {
-			return limit;
-		}
-
-		public void setLimit(int limit) {
-			this.limit = limit;
-		}
+		private OffsetLimit offsetLimit = OffsetLimit.empty();
+		private SortProperties sortProperties = SortProperties.empty();
 
 		public String getBarEq() {
 			return barEq;
@@ -443,8 +414,24 @@ public class SampleQueries {
 			this.foo = foo;
 		}
 
-		public void setSortProperties(List<SortProperty> sortProperties) {
-			this.sortProperties = sortProperties;
+		@Override
+		public SortProperties getSortProperties() {
+			return sortProperties;
+		}
+
+		@Override
+		public void setSortProperties(SortProperties properties) {
+			this.sortProperties = properties;
+		}
+
+		@Override
+		public OffsetLimit getOffsetLimit() {
+			return offsetLimit;
+		}
+
+		@Override
+		public void setOffsetLimit(OffsetLimit offsetLimit) {
+			this.offsetLimit = offsetLimit;
 		}
 	}
 }

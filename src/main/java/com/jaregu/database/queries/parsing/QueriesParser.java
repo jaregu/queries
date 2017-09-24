@@ -5,7 +5,7 @@ public interface QueriesParser {
 
 	ParsedQueries parse(QueriesSource source);
 
-	public static QueriesParser createDefault() {
+	public static QueriesParser create() {
 		return new QueriesParserImpl();
 	}
 }

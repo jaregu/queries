@@ -24,7 +24,7 @@ public class QueriesParserImplTest {
 
 	private QueriesParserImpl parser = new QueriesParserImpl();
 
-	@Test(expected = QueriesParseException.class)
+	@Test(expected = QueryParseException.class)
 	public void testNoCommentParse() throws Exception {
 		QueriesSource source = mock(QueriesSource.class);
 		when(source.getId()).thenReturn(SOURCE_ID);

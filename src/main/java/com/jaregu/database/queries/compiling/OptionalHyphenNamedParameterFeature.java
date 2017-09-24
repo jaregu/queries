@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
+import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.compiling.expr.ExpressionParser;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
@@ -27,18 +28,22 @@ import com.jaregu.database.queries.parsing.ParsedQueryPart;
  * <i>conditional_expression</i> is testable condition when this row will be
  * added to SQL, default condition is <i>conditional_expression != null</i>
  */
-public class OptionalHyphenNamedParameterFeature extends OptionalNamedParameterFeatureBase {
+final class OptionalHyphenNamedParameterFeature extends OptionalNamedParameterFeatureBase {
 
-	private final static List<Function<ParsedQueryPart, Boolean>> _const_comment_ = Arrays
-			.asList(IS_SQL_WITHOUT_NEWLINE, IS_HYPHEN_COMMENT_EXPRESSION);
-	private final static List<Function<ParsedQueryPart, Boolean>> _question_comment_ = Arrays
-			.asList(IS_ANONYMOUS_VARIABLE, IS_HYPHEN_COMMENT_EXPRESSION);
-	private final static List<Function<ParsedQueryPart, Boolean>> _question_sql_comment_ = Arrays
-			.asList(IS_ANONYMOUS_VARIABLE, IS_SQL_WITHOUT_NEWLINE, IS_HYPHEN_COMMENT_EXPRESSION);
-	private final static List<Function<ParsedQueryPart, Boolean>> _sql_question_comment_ = Arrays
-			.asList(IS_SQL_WITHOUT_NEWLINE, IS_ANONYMOUS_VARIABLE, IS_HYPHEN_COMMENT_EXPRESSION);
-	private final static List<Function<ParsedQueryPart, Boolean>> _sql_question_sql_comment_ = Arrays.asList(
-			IS_SQL_WITHOUT_NEWLINE, IS_ANONYMOUS_VARIABLE, IS_SQL_WITHOUT_NEWLINE, IS_HYPHEN_COMMENT_EXPRESSION);
+	private final List<Function<ParsedQueryPart, Boolean>> _const_comment_ = Arrays.asList(isSqlWithoutNewLine,
+			isHyphenCommentExpression);
+	private final List<Function<ParsedQueryPart, Boolean>> _question_comment_ = Arrays.asList(isAnonymousVariable,
+			isHyphenCommentExpression);
+	private final List<Function<ParsedQueryPart, Boolean>> _question_sql_comment_ = Arrays.asList(isAnonymousVariable,
+			isSqlWithoutNewLine, isHyphenCommentExpression);
+	private final List<Function<ParsedQueryPart, Boolean>> _sql_question_comment_ = Arrays.asList(isSqlWithoutNewLine,
+			isAnonymousVariable, isHyphenCommentExpression);
+	private final List<Function<ParsedQueryPart, Boolean>> _sql_question_sql_comment_ = Arrays
+			.asList(isSqlWithoutNewLine, isAnonymousVariable, isSqlWithoutNewLine, isHyphenCommentExpression);
+
+	OptionalHyphenNamedParameterFeature(ExpressionParser expressionParser, ParameterBinder parameterBinder) {
+		super(expressionParser, parameterBinder);
+	}
 
 	@Override
 	public boolean isCompilable(Source source) {

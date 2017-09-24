@@ -5,13 +5,14 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-import com.jaregu.database.queries.QueriesContext;
 import com.jaregu.database.queries.building.ParametersResolver;
 import com.jaregu.database.queries.building.QueryBuildException;
 import com.jaregu.database.queries.compiling.expr.Expression;
+import com.jaregu.database.queries.compiling.expr.ExpressionParser;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
 /**
@@ -28,10 +29,16 @@ import com.jaregu.database.queries.parsing.ParsedQueryPart;
  * 
  * </pre>
  */
-public class BlockFeature implements QueryCompilerFeature {
+final class BlockFeature implements QueryCompilerFeature {
+
+	private final ExpressionParser expressionParser;
 
 	private static final String BLOCK_OPEN_SYMBOLS = "{";
 	private static final String BLOCK_CLOSE_SYMBOLS = "}";
+
+	BlockFeature(ExpressionParser expressionParser) {
+		this.expressionParser = expressionParser;
+	}
 
 	@Override
 	public boolean isCompilable(Source source) {
@@ -76,7 +83,6 @@ public class BlockFeature implements QueryCompilerFeature {
 
 	@Override
 	public Result compile(Source source, Compiler compiler) {
-		QueriesContext context = QueriesContext.getCurrent();
 		List<ParsedQueryPart> sourceParts = source.getParts();
 
 		ParsedQueryPart openComment = sourceParts.get(0);
@@ -92,7 +98,7 @@ public class BlockFeature implements QueryCompilerFeature {
 
 		Function<ParametersResolver, Boolean> conditionFunction;
 		if (conditionExpression.length() > 0) {
-			Expression expression = context.getConfig().getExpressionParser().parse(conditionExpression).get(0);
+			Expression expression = expressionParser.parse(conditionExpression).get(0);
 			conditionFunction = (v) -> {
 				Object result = expression.eval(v).getReturnValue();
 				if (result == null || !(result instanceof Boolean)) {
@@ -114,7 +120,7 @@ public class BlockFeature implements QueryCompilerFeature {
 		};
 	}
 
-	protected static class BlockPart implements PreparedQueryPart {
+	private static final class BlockPart implements PreparedQueryPart {
 
 		final private String prefix;
 		final private String suffix;
@@ -146,6 +152,24 @@ public class BlockFeature implements QueryCompilerFeature {
 			} else {
 				return PreparedQueryPart.EMPTY;
 			}
+		}
+
+		@Override
+		public String toString() {
+			return prefix + children + suffix;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this)
+				return true;
+
+			return false;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(prefix, suffix, children);
 		}
 	}
 }

@@ -8,7 +8,7 @@ public interface QueryCompiler {
 
 	PreparedQuery compile(ParsedQuery sourceQuery);
 
-	static QueryCompiler createDefault() {
-		return QueryCompilerImpl.createDefault();
+	static QueryCompiler of(QueriesConfig config) {
+		return QueryCompilerImpl.of(config);
 	}
 }

@@ -38,7 +38,7 @@ public class CommentTypeTest {
 		assertEquals(true, CommentType.SLASH_AND_ASTERISK.matches("/* aaa bbb */"));
 	}
 
-	@Test(expected = QueriesParseException.class)
+	@Test(expected = QueryParseException.class)
 	public void testUnwrapNonHypenComment() throws Exception {
 		CommentType.HYPHENS.unwrap(" -- aaa");
 	}
@@ -61,7 +61,7 @@ public class CommentTypeTest {
 		assertEquals("-- aaa \n", CommentType.HYPHENS.wrap(" aaa "));
 	}
 
-	@Test(expected = QueriesParseException.class)
+	@Test(expected = QueryParseException.class)
 	public void testUnwrapNonSlashComment() throws Exception {
 		CommentType.SLASH_AND_ASTERISK.unwrap("/* bbb */ ");
 	}

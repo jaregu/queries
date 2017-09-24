@@ -4,12 +4,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-import com.jaregu.database.queries.QueriesContext;
 import com.jaregu.database.queries.building.NamedResolver;
-import com.jaregu.database.queries.building.ParameterBindingBuilder;
+import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.building.ParametersResolver;
 import com.jaregu.database.queries.building.QueryBuildException;
 import com.jaregu.database.queries.compiling.expr.Expression;
@@ -20,26 +20,40 @@ import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
 public abstract class OptionalNamedParameterFeatureBase implements QueryCompilerFeature {
 
-	protected static final Function<ParsedQueryPart, Boolean> IS_SQL_WITHOUT_NEWLINE = (p) -> p.isSimplePart()
+	private final ExpressionParser expressionParser;
+	private final ParameterBinder parameterBinder;
+
+	protected final Function<ParsedQueryPart, Boolean> isSqlWithoutNewLine = (p) -> p.isSimplePart()
 			&& !p.getContent().contains("\n");
 
-	protected static final Function<ParsedQueryPart, Boolean> IS_SQL = (p) -> p.isSimplePart();
+	protected final Function<ParsedQueryPart, Boolean> isSQL = (p) -> p.isSimplePart();
 
-	protected static final Function<ParsedQueryPart, Boolean> IS_ANONYMOUS_VARIABLE = (p) -> p.isAnonymousVariable();
+	protected final Function<ParsedQueryPart, Boolean> isAnonymousVariable = (p) -> p.isAnonymousVariable();
 
-	protected static final Function<ParsedQueryPart, Boolean> IS_HYPHEN_COMMENT_EXPRESSION = (p) -> {
-		ExpressionParser parser = QueriesContext.getCurrent().getConfig().getExpressionParser();
-		return p.isComment() && p.getCommentType() == CommentType.HYPHENS
-				&& parser.isLikeExpression(p.getCommentContent());
+	protected final Function<ParsedQueryPart, Boolean> isHyphenCommentExpression = isHyphenCommentExpression();
 
-	};
+	protected final Function<ParsedQueryPart, Boolean> isSlashCommentExpression = isSlashCommentExpression();
 
-	protected static final Function<ParsedQueryPart, Boolean> IS_SLASH_COMMENT_EXPRESSION = (p) -> {
-		ExpressionParser parser = QueriesContext.getCurrent().getConfig().getExpressionParser();
-		return p.isComment() && p.getCommentType() == CommentType.SLASH_AND_ASTERISK
-				&& parser.isLikeExpression(p.getCommentContent());
+	OptionalNamedParameterFeatureBase(ExpressionParser expressionParser, ParameterBinder parameterBinder) {
+		this.expressionParser = expressionParser;
+		this.parameterBinder = parameterBinder;
+	}
 
-	};
+	private Function<ParsedQueryPart, Boolean> isHyphenCommentExpression() {
+		return (p) -> {
+			return p.isComment() && p.getCommentType() == CommentType.HYPHENS
+					&& expressionParser.isLikeExpression(p.getCommentContent());
+
+		};
+	}
+
+	private Function<ParsedQueryPart, Boolean> isSlashCommentExpression() {
+		return (p) -> {
+			return p.isComment() && p.getCommentType() == CommentType.SLASH_AND_ASTERISK
+					&& expressionParser.isLikeExpression(p.getCommentContent());
+
+		};
+	}
 
 	protected final boolean isPartsLike(Source source, List<Function<ParsedQueryPart, Boolean>> matchers) {
 		List<ParsedQueryPart> parts = source.getParts();
@@ -109,42 +123,38 @@ public abstract class OptionalNamedParameterFeatureBase implements QueryCompiler
 			afterPartIndex.stream().map(parts::get).map(ParsedQueryPart::getContent).forEach(afterSql::append);
 			List<Expression> expressions = getExpressions();
 
-			ParameterBindingBuilder bindingBuilder = QueriesContext.getCurrent().getConfig()
-					.getParameterBindingBuilder();
-
 			return new Result() {
 				@Override
 				public List<PreparedQueryPart> getParts() {
 					return Collections.singletonList(new CompiledQueryOneParameterPart(beforeSql.toString(),
-							afterSql.toString(), expressions, bindingBuilder));
+							afterSql.toString(), expressions, parameterBinder));
 				}
 			};
 		}
 
 		private List<Expression> getExpressions() {
-			QueriesContext context = QueriesContext.getCurrent();
-			List<Expression> expressions = context.getConfig().getExpressionParser()
+			List<Expression> expressions = expressionParser
 					.parse(source.getParts().get(commentPartIndex).getCommentContent());
 			return expressions;
 		}
 
 	}
 
-	protected static class CompiledQueryOneParameterPart implements PreparedQueryPart {
+	private static final class CompiledQueryOneParameterPart implements PreparedQueryPart {
 
-		private String beforeSql;
-		private String afterSql;
-		private Expression valueExpression;
-		private Optional<Expression> conditionalExpression;
-		private ParameterBindingBuilder bindingBuilder;
+		private final String beforeSql;
+		private final String afterSql;
+		private final Expression valueExpression;
+		private final Optional<Expression> conditionalExpression;
+		private final ParameterBinder parameterBinder;
 
 		public CompiledQueryOneParameterPart(String beforeSql, String afterSql, List<Expression> expressions,
-				ParameterBindingBuilder bindingBuilder) {
+				ParameterBinder parameterBinder) {
 			this.beforeSql = beforeSql;
 			this.afterSql = afterSql;
 			this.valueExpression = expressions.get(0);
 			this.conditionalExpression = expressions.size() == 1 ? Optional.empty() : Optional.of(expressions.get(1));
-			this.bindingBuilder = bindingBuilder;
+			this.parameterBinder = parameterBinder;
 		}
 
 		@Override
@@ -152,7 +162,7 @@ public abstract class OptionalNamedParameterFeatureBase implements QueryCompiler
 			if (addCriterionLine(resolver)) {
 				ExpressionResult expressionResult = valueExpression.eval(resolver);
 				Object value = expressionResult.getReturnValue();
-				ParameterBindingBuilder.Result variableBindingResult = bindingBuilder.process(value);
+				ParameterBinder.Result variableBindingResult = parameterBinder.process(value);
 				String sql = beforeSql + variableBindingResult.getSql() + afterSql;
 				List<Object> parameters = variableBindingResult.getParemeters();
 				return new PreparedQueryPartResultImpl(Optional.of(sql), parameters,
@@ -189,6 +199,24 @@ public abstract class OptionalNamedParameterFeatureBase implements QueryCompiler
 				}
 				return true;
 			}
+		}
+
+		@Override
+		public String toString() {
+			return beforeSql + " ? " + afterSql;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this)
+				return true;
+
+			return false;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(beforeSql, afterSql);
 		}
 	}
 }

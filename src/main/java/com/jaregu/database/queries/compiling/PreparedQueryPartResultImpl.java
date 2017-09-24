@@ -6,9 +6,9 @@ import java.util.Optional;
 
 final class PreparedQueryPartResultImpl implements PreparedQueryPart.Result {
 
-	private Optional<String> sql;
-	private List<Object> parameters;
-	private Map<String, Object> attributes;
+	private final Optional<String> sql;
+	private final List<Object> parameters;
+	private final Map<String, Object> attributes;
 
 	PreparedQueryPartResultImpl(Optional<String> sql, List<Object> parameters, Map<String, Object> attributes) {
 		this.sql = sql;

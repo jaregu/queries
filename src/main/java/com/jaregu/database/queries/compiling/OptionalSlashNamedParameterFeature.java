@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
+import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.compiling.expr.ExpressionParser;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
@@ -21,18 +22,22 @@ import com.jaregu.database.queries.parsing.ParsedQueryPart;
  * Expression is something for what
  * {@link ExpressionParser#isLikeExpression(String)} is true
  */
-public class OptionalSlashNamedParameterFeature extends OptionalNamedParameterFeatureBase {
+final class OptionalSlashNamedParameterFeature extends OptionalNamedParameterFeatureBase {
 
-	private final static List<Function<ParsedQueryPart, Boolean>> _const_comment_sql_ = Arrays
-			.asList(IS_SQL_WITHOUT_NEWLINE, IS_SLASH_COMMENT_EXPRESSION, IS_SQL);
-	private final static List<Function<ParsedQueryPart, Boolean>> _question_comment_sql_ = Arrays
-			.asList(IS_ANONYMOUS_VARIABLE, IS_SLASH_COMMENT_EXPRESSION, IS_SQL);
-	private final static List<Function<ParsedQueryPart, Boolean>> _question_sql_comment_sql_ = Arrays
-			.asList(IS_ANONYMOUS_VARIABLE, IS_SQL_WITHOUT_NEWLINE, IS_SLASH_COMMENT_EXPRESSION, IS_SQL);
-	private final static List<Function<ParsedQueryPart, Boolean>> _sql_question_comment_sql_ = Arrays
-			.asList(IS_SQL_WITHOUT_NEWLINE, IS_ANONYMOUS_VARIABLE, IS_SLASH_COMMENT_EXPRESSION, IS_SQL);
-	private final static List<Function<ParsedQueryPart, Boolean>> _sql_question_sql_comment_sql_ = Arrays.asList(
-			IS_SQL_WITHOUT_NEWLINE, IS_ANONYMOUS_VARIABLE, IS_SQL_WITHOUT_NEWLINE, IS_SLASH_COMMENT_EXPRESSION, IS_SQL);
+	private final List<Function<ParsedQueryPart, Boolean>> _const_comment_sql_ = Arrays.asList(isSqlWithoutNewLine,
+			isSlashCommentExpression, isSQL);
+	private final List<Function<ParsedQueryPart, Boolean>> _question_comment_sql_ = Arrays.asList(isAnonymousVariable,
+			isSlashCommentExpression, isSQL);
+	private final List<Function<ParsedQueryPart, Boolean>> _question_sql_comment_sql_ = Arrays
+			.asList(isAnonymousVariable, isSqlWithoutNewLine, isSlashCommentExpression, isSQL);
+	private final List<Function<ParsedQueryPart, Boolean>> _sql_question_comment_sql_ = Arrays
+			.asList(isSqlWithoutNewLine, isAnonymousVariable, isSlashCommentExpression, isSQL);
+	private final List<Function<ParsedQueryPart, Boolean>> _sql_question_sql_comment_sql_ = Arrays
+			.asList(isSqlWithoutNewLine, isAnonymousVariable, isSqlWithoutNewLine, isSlashCommentExpression, isSQL);
+
+	OptionalSlashNamedParameterFeature(ExpressionParser expressionParser, ParameterBinder parameterBinder) {
+		super(expressionParser, parameterBinder);
+	}
 
 	@Override
 	public boolean isCompilable(Source source) {

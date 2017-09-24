@@ -1,7 +1,6 @@
 package com.jaregu.queries.example;
 
-import static com.jaregu.database.queries.Queries.sourceOf;
-import static com.jaregu.database.queries.Queries.sourceOfResource;
+import static com.jaregu.database.queries.parsing.QueriesSource.*;
 import static org.dalesbred.query.SqlQuery.query;
 
 import java.util.HashMap;
@@ -89,13 +88,13 @@ public class SimpleExample {
 	}
 
 	private void initQueries() {
-		createSource = sourceOfResource("com/jaregu/queries/example/create.sql");
-		populateSource = sourceOfResource("com/jaregu/queries/example/populate.sql");
-		otherSource = sourceOf(SourceId.ofId("some.source"), () -> {
+		createSource = ofResource("com/jaregu/queries/example/create.sql");
+		populateSource = ofResource("com/jaregu/queries/example/populate.sql");
+		otherSource = ofContent(SourceId.ofId("some.source"), () -> {
 			return "-- query1\nselect 1;";
 		});
 
-		queries = Queries.of(createSource, populateSource, sourceOfResource(SimpleExample.class), otherSource);
+		queries = Queries.of(createSource, populateSource, ofClass(SimpleExample.class), otherSource);
 	}
 
 	private void createTables() {

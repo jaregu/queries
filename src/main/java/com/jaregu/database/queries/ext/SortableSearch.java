@@ -1,30 +1,40 @@
 package com.jaregu.database.queries.ext;
 
-import java.util.List;
+import static com.jaregu.database.queries.ext.SortProperties.empty;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public interface SortableSearch {
 
-	List<SortProperty> getSortProperties();
+	SortProperties getSortProperties();
 
-	interface SortProperty {
+	void setSortProperties(SortProperties properties);
 
-		String getProperty();
-
-		SortType getType();
+	default boolean hasSortProperties() {
+		return getSortProperties() != null && !getSortProperties().isEmpty();
 	}
 
-	enum SortType {
+	default String sortPropertiesToSql() {
+		return getSortProperties().toSql();
+	}
 
-		ASC(""), DESC(" DESC");
+	default void clearSortProperties() {
+		setSortProperties(empty());
+	}
 
-		private String sql;
+	default void addSortProperty(SortProperty property) {
+		setSortProperties((getSortProperties() != null ? getSortProperties() : empty()).add(property));
+	}
 
-		private SortType(String sql) {
-			this.sql = sql;
-		}
+	default void addSort(String property) {
+		setSortProperties((getSortProperties() != null ? getSortProperties() : empty()).add(property));
+	}
 
-		public String getSql() {
-			return sql;
-		}
+	default void addSortAsc(String property) {
+		setSortProperties((getSortProperties() != null ? getSortProperties() : empty()).addAsc(property));
+	}
+
+	default void addSortDesc(String property) {
+		setSortProperties((getSortProperties() != null ? getSortProperties() : empty()).addDesc(property));
 	}
 }

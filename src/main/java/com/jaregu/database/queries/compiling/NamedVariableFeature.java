@@ -2,11 +2,11 @@ package com.jaregu.database.queries.compiling;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
-import com.jaregu.database.queries.QueriesContext;
 import com.jaregu.database.queries.building.NamedResolver;
-import com.jaregu.database.queries.building.ParameterBindingBuilder;
+import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.building.ParametersResolver;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
@@ -19,7 +19,13 @@ import com.jaregu.database.queries.parsing.ParsedQueryPart;
  * [SQL] :someName [SQL]
  * </pre>
  */
-public class NamedVariableFeature implements QueryCompilerFeature {
+final class NamedVariableFeature implements QueryCompilerFeature {
+
+	final private ParameterBinder parameterBinder;
+
+	NamedVariableFeature(ParameterBinder parameterBinder) {
+		this.parameterBinder = parameterBinder;
+	}
 
 	@Override
 	public boolean isCompilable(Source source) {
@@ -31,23 +37,23 @@ public class NamedVariableFeature implements QueryCompilerFeature {
 	public Result compile(Source source, Compiler compiler) {
 		List<ParsedQueryPart> sourceParts = source.getParts();
 		ParsedQueryPart variable = sourceParts.get(0);
-		ParameterBindingBuilder bindingBuilder = QueriesContext.getCurrent().getConfig().getParameterBindingBuilder();
+
 		return new Result() {
 			@Override
 			public List<PreparedQueryPart> getParts() {
-				return Collections.singletonList(new NamedVariablePart(variable.getVariableName(), bindingBuilder));
+				return Collections.singletonList(new NamedVariablePart(variable.getVariableName(), parameterBinder));
 			}
 		};
 	}
 
-	private static class NamedVariablePart implements PreparedQueryPart {
+	private static final class NamedVariablePart implements PreparedQueryPart {
 
-		private String variableName;
-		private ParameterBindingBuilder bindingBuilder;
+		private final String variableName;
+		private final ParameterBinder parameterBinder;
 
-		public NamedVariablePart(String variableName, ParameterBindingBuilder bindingBuilder) {
+		public NamedVariablePart(String variableName, ParameterBinder parameterBinder) {
 			this.variableName = variableName;
-			this.bindingBuilder = bindingBuilder;
+			this.parameterBinder = parameterBinder;
 		}
 
 		@Override
@@ -55,10 +61,28 @@ public class NamedVariableFeature implements QueryCompilerFeature {
 
 			NamedResolver namedParameters = resolver.getNamedResolver();
 			Object value = namedParameters.getValue(variableName);
-			ParameterBindingBuilder.Result result = bindingBuilder.process(value);
+			ParameterBinder.Result result = parameterBinder.process(value);
 
 			return new PreparedQueryPartResultImpl(Optional.of(result.getSql()), result.getParemeters(),
 					Collections.emptyMap());
+		}
+
+		@Override
+		public String toString() {
+			return ":" + variableName;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this)
+				return true;
+
+			return false;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(variableName);
 		}
 	}
 }

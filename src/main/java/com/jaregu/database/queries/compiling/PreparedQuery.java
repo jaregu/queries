@@ -17,9 +17,9 @@ public interface PreparedQuery {
 
 	Query build(Object params);
 
-	Query build(Map<String, Object> params);
+	Query build(Map<String, ?> params);
 
-	Query build(List<Object> params);
+	Query build(List<?> params);
 
 	Query build(Object... params);
 
@@ -38,7 +38,7 @@ public interface PreparedQuery {
 
 	Query build(IteratorResolver resolver);
 
-	Query build(Iterable<Object> resolver);
+	Query build(Iterable<?> resolver);
 
 	Query build(ParametersResolver resolver);
 }

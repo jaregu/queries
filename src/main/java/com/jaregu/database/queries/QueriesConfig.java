@@ -1,28 +1,18 @@
 package com.jaregu.database.queries;
 
-import com.jaregu.database.queries.building.ParameterBindingBuilder;
+import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.cache.QueriesCache;
-import com.jaregu.database.queries.compiling.QueryCompiler;
-import com.jaregu.database.queries.compiling.expr.ExpressionParser;
-import com.jaregu.database.queries.parsing.QueriesParser;
+import com.jaregu.database.queries.dialect.Dialect;
 
 public interface QueriesConfig {
 
 	QueriesCache getCache();
 
-	QueriesParser getParser();
+	Dialect getDialect();
 
-	QueryCompiler getCompiler();
+	ParameterBinder getParameterBinder();
 
-	ExpressionParser getExpressionParser();
-
-	ParameterBindingBuilder getParameterBindingBuilder();
-
-	static QueriesConfigImpl.Builder builder() {
-		return QueriesConfigImpl.builder();
-	}
-
-	static QueriesConfig createDefault() {
-		return QueriesConfigImpl.builder().build();
+	static QueriesConfig of(Dialect dialect, QueriesCache cache, ParameterBinder parameterBinder) {
+		return new QueriesConfigImpl(dialect, cache, parameterBinder);
 	}
 }

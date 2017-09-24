@@ -4,26 +4,39 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.jaregu.database.queries.QueriesConfig;
+import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Compiler;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Result;
 import com.jaregu.database.queries.compiling.QueryCompilerFeature.Source;
+import com.jaregu.database.queries.compiling.expr.ExpressionParser;
+import com.jaregu.database.queries.dialect.Dialect;
 import com.jaregu.database.queries.parsing.ParsedQuery;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
-public class QueryCompilerImpl implements QueryCompiler, Compiler {
-
-	private static final List<QueryCompilerFeature> FEATURES = Arrays.asList(new IgnoredCommentFeature(),
-			new BlockFeature(), new OptionalHyphenNamedParameterFeature(), new OptionalSlashNamedParameterFeature(),
-			new NamedVariableFeature(), new AnonymousVariableFeature());
+class QueryCompilerImpl implements QueryCompiler, Compiler {
 
 	private List<QueryCompilerFeature> features;
 
-	public static QueryCompiler createDefault() {
-		return new QueryCompilerImpl(FEATURES);
+	private Dialect dialect;
+
+	public static QueryCompiler of(QueriesConfig config) {
+
+		ExpressionParser expressionParser = ExpressionParser.defaultParser();
+		ParameterBinder parameterBinder = config.getParameterBinder();
+
+		List<QueryCompilerFeature> features = Arrays.asList(new IgnoredCommentFeature(),
+				new BlockFeature(expressionParser),
+				new OptionalHyphenNamedParameterFeature(expressionParser, parameterBinder),
+				new OptionalSlashNamedParameterFeature(expressionParser, parameterBinder),
+				new NamedVariableFeature(parameterBinder), new AnonymousVariableFeature(parameterBinder));
+
+		return new QueryCompilerImpl(features, config.getDialect());
 	}
 
-	public QueryCompilerImpl(List<QueryCompilerFeature> features) {
+	QueryCompilerImpl(List<QueryCompilerFeature> features, Dialect dialect) {
 		this.features = features;
+		this.dialect = dialect;
 	}
 
 	@Override
@@ -31,7 +44,7 @@ public class QueryCompilerImpl implements QueryCompiler, Compiler {
 		return CompileContext.of(sourceQuery).withContext(() -> {
 			PartsCompiler compiler = new PartsCompiler(sourceQuery.getParts());
 			compiler.compile();
-			return new PreparedQueryImpl(sourceQuery.getQueryId(), compiler.getCompiledParts());
+			return new PreparedQueryImpl(sourceQuery.getQueryId(), compiler.getCompiledParts(), dialect);
 		});
 	}
 

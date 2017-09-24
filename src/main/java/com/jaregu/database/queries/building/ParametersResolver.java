@@ -23,13 +23,13 @@ public interface ParametersResolver {
 				() -> new IteratorResolverImpl(Collections.singletonList(object)));
 	}
 
-	public static ParametersResolver ofMap(Map<String, Object> map) {
+	public static ParametersResolver ofMap(Map<String, ?> map) {
 		return new ParametersResolverImpl(() -> NamedResolver.forMap(map), () -> {
 			throw new QueryBuildException("Can't create iterable parameters resolver from map!");
 		});
 	}
 
-	public static ParametersResolver ofList(List<Object> parameters) {
+	public static ParametersResolver ofList(List<?> parameters) {
 		return new ParametersResolverImpl(() -> NamedResolver.forList(parameters),
 				() -> new IteratorResolverImpl(parameters));
 	}
@@ -46,7 +46,7 @@ public interface ParametersResolver {
 		}, () -> parameters);
 	}
 
-	public static ParametersResolver ofIterable(Iterable<Object> parameters) {
+	public static ParametersResolver ofIterable(Iterable<?> parameters) {
 		return new ParametersResolverImpl(() -> {
 			throw new QueryBuildException("Can't create named parameters resolver from iterable parameters!");
 		}, () -> new IteratorResolverImpl(parameters));
