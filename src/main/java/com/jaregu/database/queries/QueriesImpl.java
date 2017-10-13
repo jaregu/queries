@@ -1,6 +1,8 @@
 package com.jaregu.database.queries;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -16,6 +18,7 @@ import com.jaregu.database.queries.parsing.ParsedQuery;
 import com.jaregu.database.queries.parsing.QueriesParser;
 import com.jaregu.database.queries.parsing.QueriesSource;
 import com.jaregu.database.queries.parsing.QueriesSources;
+import com.jaregu.database.queries.proxy.QueriesInvocationHandler;
 
 public final class QueriesImpl implements Queries {
 
@@ -25,24 +28,27 @@ public final class QueriesImpl implements Queries {
 	private final QueriesParser parser;
 	private final QueryCompiler compiler;
 	private final QueriesCache cache;
+	private final QueriesConfig config;
 
 	private volatile Map<SourceId, QueriesSource> sourcesById;
 
-	QueriesImpl(QueriesSources sources, QueriesConfig config) {
+	QueriesImpl(QueriesSources sources, QueriesParser parser, QueryCompiler compiler, QueriesCache cache,
+			QueriesConfig config) {
 		this.sources = sources;
-		this.parser = QueriesParser.create();
-		this.compiler = QueryCompiler.of(config);
-		this.cache = config.getCache();
+		this.parser = parser;
+		this.compiler = compiler;
+		this.cache = cache;
+		this.config = config;
 	}
 
 	@Override
 	public PreparedQuery get(QueryId queryId) {
-		return cache.getPreparedQuery(queryId, this::prepareQuery);
+		return cache.getPreparedQuery(queryId, () -> prepareQuery(queryId));
 	}
 
 	@Override
-	public RetativeQueries ofSource(SourceId sourceId) {
-		return new RetativeQueries() {
+	public RelativeQueries relativeTo(SourceId sourceId) {
+		return new RelativeQueries() {
 
 			@Override
 			public PreparedQuery get(String id) {
@@ -51,8 +57,20 @@ public final class QueriesImpl implements Queries {
 		};
 	}
 
+	@Override
+	public <T> T proxy(Class<T> classOfInterface) {
+		InvocationHandler handler = new QueriesInvocationHandler(classOfInterface, this,
+				config.getQueryMapperFactories());
+
+		@SuppressWarnings("unchecked")
+		T proxy = (T) Proxy.newProxyInstance(classOfInterface.getClassLoader(), new Class<?>[] { classOfInterface },
+				handler);
+		return proxy;
+	}
+
 	private PreparedQuery prepareQuery(QueryId queryId) {
-		ParsedQuery sourceQuery = cache.getParsedQueries(queryId.getSourceId(), this::parseQueries).get(queryId);
+		ParsedQuery sourceQuery = cache
+				.getParsedQueries(queryId.getSourceId(), () -> parseQueries(queryId.getSourceId())).get(queryId);
 		log.debug("Starting to compile queryId: {}!", queryId);
 		return compiler.compile(sourceQuery);
 	}

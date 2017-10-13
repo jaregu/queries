@@ -3,7 +3,7 @@ package com.jaregu.database.queries.building;
 import com.jaregu.database.queries.QueryException;
 
 /**
- * Exception thrown when a variable could not be resolved.
+ * Exception thrown when there is problems with {@link Query} building
  */
 @SuppressWarnings("serial")
 public class QueryBuildException extends QueryException {

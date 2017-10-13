@@ -28,7 +28,7 @@ public class VariableImplTest {
 	@Before
 	public void setUp() {
 		context = EvaluationContext.forVariableResolver(variableResolver).build();
-		when(variableResolver.getNamedResolver()).thenReturn(namedResolver);
+		when(variableResolver.toNamed()).thenReturn(namedResolver);
 	}
 
 	@Test

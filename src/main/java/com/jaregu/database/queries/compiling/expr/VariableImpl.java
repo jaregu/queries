@@ -16,7 +16,7 @@ public final class VariableImpl extends EvaluableOperand implements Variable {
 	@Override
 	public Object getValue() {
 		EvaluationContext context = EvaluationContext.getCurrent();
-		return context.getVariableResolver().getNamedResolver().getValue(name);
+		return context.getVariableResolver().toNamed().getValue(name);
 	}
 
 	@Override

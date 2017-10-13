@@ -3,18 +3,19 @@ apply plugin: 'eclipse'
 apply plugin: 'eclipse-wtp'
 
 repositories {
-    mavenCentral()
+	mavenCentral()
 	jcenter()
 	maven { url "https://maven.atlassian.com/3rdparty/" }
 }
 
-[ compileJava, compileTestJava ]*.options*.encoding = 'UTF-8'
+[
+	compileJava,
+	compileTestJava
+]*.options*.encoding = 'UTF-8'
 sourceCompatibility = 1.8
 version = '0.9'
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.5'
-}
+task wrapper(type: Wrapper) { gradleVersion = '3.5' }
 
 eclipseJdt.doLast {
 	File f = file('.settings/org.eclipse.core.resources.prefs')
@@ -44,33 +45,33 @@ eclipse {
 dependencies {
 	compile 'org.slf4j:slf4j-api:1.7.+'
 	compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.9.+'
-	
-	
+	compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.9.+'
+
+	//for caching extension
+	compileOnly "com.github.ben-manes.caffeine:caffeine:2.+"
+
+	//for metrics extension
+	compileOnly  'io.dropwizard.metrics:metrics-core:3.+'
+
+	//for guice extension
+	compileOnly "com.google.inject:guice:4.1.0"
+	compileOnly "com.google.inject.extensions:guice-multibindings:4.1.0"
+
 	testCompile 'org.mockito:mockito-core:+'
 	testCompile 'junit:junit:+'
 	testCompile 'org.assertj:assertj-core:3.8.0'
-	
-	testCompile  'io.dropwizard.metrics:metrics-core:3.+'
-	
-	//dependency injection
-	def guiceVersion = '4.1.0'
-	example "com.google.inject:guice:${guiceVersion}"
-	example "com.google.inject.extensions:guice-servlet:${guiceVersion}"
-	example "com.google.inject.extensions:guice-assistedinject:${guiceVersion}"
-	example "com.google.inject.extensions:guice-multibindings:${guiceVersion}"
-	
-	//caching
+
 	example "com.github.ben-manes.caffeine:caffeine:2.+"
-	
+
 	//logging
 	example "ch.qos.logback:logback-classic:1.2.+"
 	example "org.codehaus.groovy:groovy-all:2.4.+"
-	
+
 	//db
 	example "org.hsqldb:hsqldb:2.4.+"
 	example 'org.mariadb.jdbc:mariadb-java-client:1.5.+'
 	example group: 'com.oracle', name: 'ojdbc6', version: '12.1.0.1-atlassian-hosted'
-	
+
 	example "com.zaxxer:HikariCP:2.6+"
 	example 'org.dalesbred:dalesbred:1.2.+'
 }

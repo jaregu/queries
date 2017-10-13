@@ -1,7 +1,7 @@
 package com.jaregu.database.queries.cache;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
@@ -17,12 +17,12 @@ public class QueriesMapCache implements QueriesCache {
 	}
 
 	@Override
-	public ParsedQueries getParsedQueries(SourceId sourceId, Function<SourceId, ParsedQueries> queriesSupplier) {
-		return sources.computeIfAbsent(sourceId, queriesSupplier);
+	public ParsedQueries getParsedQueries(SourceId sourceId, Supplier<ParsedQueries> queriesSupplier) {
+		return sources.computeIfAbsent(sourceId, (k) -> queriesSupplier.get());
 	}
 
 	@Override
-	public PreparedQuery getPreparedQuery(QueryId queryId, Function<QueryId, PreparedQuery> querySupplier) {
-		return queries.computeIfAbsent(queryId, querySupplier);
+	public PreparedQuery getPreparedQuery(QueryId queryId, Supplier<PreparedQuery> querySupplier) {
+		return queries.computeIfAbsent(queryId, (k) -> querySupplier.get());
 	}
 }

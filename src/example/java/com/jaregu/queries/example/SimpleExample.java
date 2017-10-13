@@ -10,7 +10,7 @@ import java.util.Map;
 import org.dalesbred.Database;
 
 import com.jaregu.database.queries.Queries;
-import com.jaregu.database.queries.RetativeQueries;
+import com.jaregu.database.queries.RelativeQueries;
 import com.jaregu.database.queries.SourceId;
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.compiling.PreparedQuery;
@@ -98,7 +98,7 @@ public class SimpleExample {
 	}
 
 	private void createTables() {
-		RetativeQueries createQueries = queries.ofSource(createSource.getId());
+		RelativeQueries createQueries = queries.relativeTo(createSource.getId());
 		db.update(createQueries.get("person").build().getSql());
 		db.update(createQueries.get("team").build().getSql());
 		db.update(createQueries.get("team_person").build().getSql());
@@ -131,17 +131,17 @@ public class SimpleExample {
 	}
 
 	private Integer getPersonCount() {
-		RetativeQueries selectQueries = queries.ofSource(SourceId.ofClass(SimpleExample.class));
+		RelativeQueries selectQueries = queries.relativeTo(SourceId.ofClass(SimpleExample.class));
 		return selectQueries.get("count persons").build().map(q -> db.findUniqueInt(q.getSql()));
 	}
 
 	private List<Person> findAllPersons() {
-		RetativeQueries selectQueries = queries.ofSource(SourceId.ofClass(SimpleExample.class));
+		RelativeQueries selectQueries = queries.relativeTo(SourceId.ofClass(SimpleExample.class));
 		return db.findAll(Person.class, selectQueries.get("find all").build().getSql());
 	}
 
 	private List<Person> findPersons(PersonSearch search) {
-		RetativeQueries selectQueries = queries.ofSource(SourceId.ofClass(SimpleExample.class));
+		RelativeQueries selectQueries = queries.relativeTo(SourceId.ofClass(SimpleExample.class));
 		return selectQueries.get("persons search").build(search)
 				.map(q -> db.findAll(Person.class, query(q.getSql(), q.getParameters())));
 	}

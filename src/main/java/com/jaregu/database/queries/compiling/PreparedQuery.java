@@ -1,44 +1,26 @@
 package com.jaregu.database.queries.compiling;
 
-import java.util.List;
-import java.util.Map;
-
 import com.jaregu.database.queries.QueryId;
-import com.jaregu.database.queries.building.Query;
-import com.jaregu.database.queries.building.IteratorResolver;
-import com.jaregu.database.queries.building.NamedResolver;
 import com.jaregu.database.queries.building.ParametersResolver;
+import com.jaregu.database.queries.building.Query;
+import com.jaregu.database.queries.building.QueryBuilder;
 
-public interface PreparedQuery {
+/**
+ * Represent immutable (thread safe) compiled/prepared SQL statement
+ * <i>logic</i> used to build SQL statement representations. Can be cached for
+ * subsequent use. Calling one of <code>build</code> methods returns
+ * {@link Query} instance which can be used in database executing layer.
+ *
+ */
+public interface PreparedQuery extends QueryBuilder<Query> {
 
+	/**
+	 * This query identification, each query has unique ID
+	 * 
+	 * @return
+	 */
 	QueryId getQueryId();
 
-	Query build();
-
-	Query build(Object params);
-
-	Query build(Map<String, ?> params);
-
-	Query build(List<?> params);
-
-	Query build(Object... params);
-
-	Query build(String k1, Object v1);
-
-	Query build(String k1, Object v1, String k2, Object v2);
-
-	Query build(String k1, Object v1, String k2, Object v2, String k3, Object v3);
-
-	Query build(String k1, Object v1, String k2, Object v2, String k3, Object v3, String k4, Object v4);
-
-	Query build(String k1, Object v1, String k2, Object v2, String k3, Object v3, String k4, Object v4, String k5,
-			Object v5);
-
-	Query build(NamedResolver resolver);
-
-	Query build(IteratorResolver resolver);
-
-	Query build(Iterable<?> resolver);
-
+	@Override
 	Query build(ParametersResolver resolver);
 }

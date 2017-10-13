@@ -14,7 +14,10 @@ public class BeanResolver implements NamedResolver {
 
 	public BeanResolver(Object bean) {
 		this.bean = Objects.requireNonNull(bean);
+	}
 
+	protected Object getBean() {
+		return bean;
 	}
 
 	public Object getValue(String variableName) {

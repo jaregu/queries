@@ -63,7 +63,7 @@ public class QueriesParserImplTest {
 
 		testQueries(queries(query("q 5", queryId("/*  q 5  */"), "some simple content")));
 
-		testQueries(queries(query("query 6", queryId("/*  query 6  */"), "\n", "some simple content line\n", ";")));
+		testQueries(queries(query("query 6", queryId("/*  query 6  */"), "\n", "some simple content line\n")));
 
 		testQueries(queries(query("query 7", queryId("/*  query 7  */"), "\n", "line 1\n", "line 2\n", "line 3\n",
 				"line 4\n", "line 5    ", "/* line 5 comment with \n line\n breaks inside */",
@@ -90,29 +90,41 @@ public class QueriesParserImplTest {
 
 	@Test
 	public void testMultipleQueries() throws Exception {
-		testQueries(queries(query("query 1-1", queryId("-- query 1-1 \n"), "some query 1-1 content;"),
-				query("query 1-2", "\n", "\n", "\n", queryId("/* query 1-2 */"), "\n", "some query 1-2 content;")));
-		testQueries(queries(query("query 2-1", queryId("-- query 2-1 \n"), "some query 2-1 content;"),
-				query("query 2-2", queryId("/* query 2-2 */"), "\n", "some query 2-2 content;")));
-		testQueries(queries(query("query 2-1", queryId("-- query 2-1 \n"), "some query 2-1 content;"),
-				query("query 2-2", queryId("/* query 2-2 */"), "\n", "some query 2-2 content;")));
+		testQueries(queries(
+
+				query("query 1-1", queryId("-- query 1-1 \n"), "some query 1-1 content"),
+
+				query("query 1-2", "\n", "\n", "\n", queryId("/* query 1-2 */"), "\n", "some query 1-2 content")));
 
 		testQueries(queries(
 
-				query("query 3-1", queryId("-- query 3-1 \n"), "AAA;"),
+				query("query 2-1", queryId("-- query 2-1 \n"), "some query 2-1 content"),
 
-				query("query 3-2", "\n", queryId("/* query 3-2 */"), "\n", "BBB1\n", "BBB2\n", "BBB3\n", "BBB4;"),
+				query("query 2-2", queryId("/* query 2-2 */"), "\n", "some query 2-2 content")));
+
+		testQueries(queries(
+
+				query("query 2-1", queryId("-- query 2-1 \n"), "some query 2-1 content"),
+
+				query("query 2-2", queryId("/* query 2-2 */"), "\n", "some query 2-2 content")));
+
+		testQueries(queries(
+
+				query("query 3-1", queryId("-- query 3-1 \n"), "AAA"),
+
+				query("query 3-2", "\n", queryId("/* query 3-2 */"), "\n", "BBB1\n", "BBB2\n", "BBB3\n", "BBB4"),
 
 				query("query 3-3", "\n", queryId("-- query 3-3 \n"), "\n", "CCC1\n", "  CCC2", "/* some CCC comment */",
-						" CCC2 after  \n", "CCC_end;"),
+						" CCC2 after  \n", "CCC_end"),
 
 				query("query 3-4", "\n", queryId("/* query 3-4 */"), "\n", "DDD_start\n", "DDD1 ",
-						"-- some line comment\n", "DDD2 ", "--- some line comment\n", "DDD;")));
+						"-- some line comment\n", "DDD2 ", "--- some line comment\n", "DDD")));
 
 	}
 
 	private void testQueries(TestQueries queries) {
 		String sql = queries.toString();
+		System.out.println(sql);
 		ParsedQueries sourceQueries = null;
 		TestQuery query = null;
 		ParsedQuery sourceQuery = null;
@@ -192,7 +204,7 @@ public class QueriesParserImplTest {
 
 		@Override
 		public String toString() {
-			return queries.stream().map(TestQuery::toString).reduce("", (a, b) -> a + b);
+			return queries.stream().map(TestQuery::toString).reduce("", (a, b) -> a.isEmpty() ? b : a + ";" + b);
 		}
 	}
 

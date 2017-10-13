@@ -2,8 +2,6 @@ package com.jaregu.database.queries.dialect;
 
 import com.jaregu.database.queries.Queries;
 import com.jaregu.database.queries.building.Query;
-import com.jaregu.database.queries.ext.OffsetLimit;
-import com.jaregu.database.queries.ext.SortProperties;
 
 /**
  * Represents database dialect used to build some database specific query
@@ -28,35 +26,35 @@ public interface Dialect {
 
 	/**
 	 * 
-	 * Returns new query which has dialect specific <code>LIMIT, OFFSET</code>
-	 * part added using passed {@link OffsetLimit}
+	 * Returns new query with dialect specific <code>LIMIT, OFFSET</code>
+	 * functionality clause added using given {@link Pageable}
 	 * 
 	 * @param query
-	 * @param offsetLimit
+	 * @param pageable
 	 * @return new {@link Query} which has paging part added
 	 */
-	Query toPagedQuery(Query query, OffsetLimit offsetLimit);
+	Query toPagedQuery(Query query, Pageable pageable);
 
 	/**
-	 * Returns new query which has added <code>ORDER BY</code> clause using
-	 * passed ({@link SortProperties})
+	 * Returns new query with <code>ORDER BY</code> clause added using given
+	 * {@link Orderable} items
 	 * 
 	 * @param query
 	 * @param sortProperties
-	 * @return new {@link Query} which has <code>ORDER BY</code> clause added
+	 * @return new {@link Query} with <code>ORDER BY</code> clause added
 	 */
-	Query toSortedQuery(Query query, SortProperties sortProperties);
+	Query toOrderedQuery(Query query, Orderable orderable);
 
 	/**
-	 * Returns new query which has original query wrapped as sub-query inside
-	 * <code>COUNT</code> query like
+	 * Returns new query with original query wrapped as <code>COUNT</code>
+	 * sub-query like:
 	 * 
 	 * <pre>
 	 * SELECT COUNT(1) FROM ({original_query})
 	 * </pre>
 	 * 
 	 * @param query
-	 * @return new {@link Query} which is count query implementation
+	 * @return new {@link Query} wrapped in COUNT query
 	 */
 	Query toCountQuery(Query query);
 }

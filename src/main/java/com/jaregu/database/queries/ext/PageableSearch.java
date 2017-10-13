@@ -3,14 +3,16 @@ package com.jaregu.database.queries.ext;
 import static com.jaregu.database.queries.ext.OffsetLimit.empty;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.jaregu.database.queries.dialect.Pageable;
 
-public interface PageableSearch {
+public interface PageableSearch extends Pageable {
 
 	@JsonIgnore
 	OffsetLimit getOffsetLimit();
 
 	void setOffsetLimit(OffsetLimit offsetLimit);
 
+	@Override
 	default Integer getOffset() {
 		OffsetLimit offsetLimit = getOffsetLimit();
 		return offsetLimit != null ? offsetLimit.getOffset() : null;
@@ -20,6 +22,7 @@ public interface PageableSearch {
 		setOffsetLimit((getOffsetLimit() != null ? getOffsetLimit() : empty()).offset(offset));
 	}
 
+	@Override
 	default Integer getLimit() {
 		OffsetLimit offsetLimit = getOffsetLimit();
 		return offsetLimit != null ? offsetLimit.getLimit() : null;

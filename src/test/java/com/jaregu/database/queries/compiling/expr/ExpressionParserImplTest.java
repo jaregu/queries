@@ -423,7 +423,7 @@ public class ExpressionParserImplTest {
 	@Test
 	public void testCollections() {
 
-		NamedResolver resolver = NamedResolver.forBean(new CollectionsHolder());
+		NamedResolver resolver = NamedResolver.ofBean(new CollectionsHolder());
 		evalCol(true, ":emptySet.empty", resolver);
 		evalCol(true, ":emptyList.empty", resolver);
 		evalCol(true, ":emptyMap.empty", resolver);

@@ -4,6 +4,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
+/**
+ * Implementation represent collection of {@link QueriesSource}
+ *
+ */
 @FunctionalInterface
 public interface QueriesSources {
 

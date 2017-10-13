@@ -4,10 +4,24 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Objects;
 
+/**
+ * System wide unique query statement identification
+ *
+ */
 public interface QueryId {
 
+	/**
+	 * Returns source identification to which it belongs
+	 * 
+	 * @return
+	 */
 	SourceId getSourceId();
 
+	/**
+	 * Returns this query statement relative to source string identification
+	 * 
+	 * @return
+	 */
 	String getId();
 
 	static QueryId of(SourceId sourceId, String id) {
@@ -60,7 +74,7 @@ public interface QueryId {
 			if (o == null) {
 				return false;
 			}
-			if (!(o instanceof QueryId)) {
+			if (!(o instanceof QueryIdImpl)) {
 				return false;
 			}
 			QueryIdImpl queryId = (QueryIdImpl) o;

@@ -1,35 +1,43 @@
 package com.jaregu.database.queries.dialect;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.building.QueryImpl;
-import com.jaregu.database.queries.ext.OffsetLimit;
-import com.jaregu.database.queries.ext.SortProperties;
 
 public class DefaultDialectImpl implements Dialect {
 
 	@Override
-	public Query toSortedQuery(Query query, SortProperties sortProperties) {
-		if (!sortProperties.isEmpty()) {
+	public Query toOrderedQuery(Query query, Orderable orderable) {
+		List<String> items;
+		if (orderable != null && (items = orderable.getOrderByItems()) != null && !items.isEmpty()) {
+
 			StringBuilder newSql = new StringBuilder("SELECT x.* FROM /* ORDER BY wrapper by default dialect */ (\n")
-					.append(query.getSql()).append("\n) x").append(" ").append(sortProperties.toSql());
+					.append(query.getSql()).append("\n) x ORDER BY ");
+			Iterator<String> iterator = items.iterator();
+
+			newSql.append(iterator.next());
+			while (iterator.hasNext()) {
+				newSql.append(", ").append(iterator.next());
+			}
+
 			return new QueryImpl(newSql.toString(), query.getParameters(), query.getAttributes(), this);
 		}
 		return query;
 	}
 
 	@Override
-	public Query toPagedQuery(Query query, OffsetLimit offsetLimit) {
-		if (offsetLimit.getLimit() != null) {
+	public Query toPagedQuery(Query query, Pageable pageable) {
+		if (pageable.getLimit() != null) {
 			List<Object> parameters = new ArrayList<>(query.getParameters().size() + 2);
 			parameters.addAll(query.getParameters());
 			StringBuilder newSql = new StringBuilder(query.getSql()).append("\nLIMIT ?");
-			parameters.add(offsetLimit.getLimit());
-			if (offsetLimit.getOffset() != null) {
+			parameters.add(pageable.getLimit());
+			if (pageable.getOffset() != null) {
 				newSql.append(" OFFSET ?");
-				parameters.add(offsetLimit.getOffset());
+				parameters.add(pageable.getOffset());
 			}
 			return new QueryImpl(newSql.toString(), parameters, query.getAttributes(), this);
 		}

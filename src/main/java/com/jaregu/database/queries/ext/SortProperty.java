@@ -1,9 +1,14 @@
 package com.jaregu.database.queries.ext;
 
+import java.io.Serializable;
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class SortProperty {
+public final class SortProperty implements Serializable {
+
+	private static final long serialVersionUID = -109082551693301890L;
 
 	final private String name;
 	final private SortOrder sortOrder;
@@ -42,6 +47,25 @@ public final class SortProperty {
 	@Override
 	public String toString() {
 		return "SortProperty{" + toSql() + "}";
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this)
+			return true;
+
+		if (obj instanceof SortProperty) {
+			SortProperty other = (SortProperty) obj;
+			return Objects.equals(name, other.name) && Objects.equals(sortOrder, other.sortOrder)
+					&& Objects.equals(nullsOrder, other.nullsOrder);
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, sortOrder, nullsOrder);
 	}
 
 	public SortProperty asc() {

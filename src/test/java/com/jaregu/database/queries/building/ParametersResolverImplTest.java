@@ -42,21 +42,21 @@ public class ParametersResolverImplTest {
 
 	@Test
 	public void testNamedParameter() {
-		assertThat(resolver.getNamedResolver()).isSameAs(namedResolver);
-		assertThat(resolver.getNamedResolver()).isSameAs(namedResolver);
+		assertThat(resolver.toNamed()).isSameAs(namedResolver);
+		assertThat(resolver.toNamed()).isSameAs(namedResolver);
 		verify(namedSupplier, times(1)).get();
-		assertThatThrownBy(() -> resolver.getIteratorResolver()).isInstanceOf(QueryBuildException.class);
-		assertThatThrownBy(() -> resolver.getIteratorResolver()).isInstanceOf(QueryBuildException.class);
+		assertThatThrownBy(() -> resolver.toIterator()).isInstanceOf(QueryBuildException.class);
+		assertThatThrownBy(() -> resolver.toIterator()).isInstanceOf(QueryBuildException.class);
 		verifyZeroInteractions(iteratorSupplier);
 	}
 
 	@Test
 	public void testIteratorParameter() {
-		assertThat(resolver.getIteratorResolver()).isSameAs(iteratorResolver);
-		assertThat(resolver.getIteratorResolver()).isSameAs(iteratorResolver);
+		assertThat(resolver.toIterator()).isSameAs(iteratorResolver);
+		assertThat(resolver.toIterator()).isSameAs(iteratorResolver);
 		verify(iteratorSupplier, times(1)).get();
-		assertThatThrownBy(() -> resolver.getNamedResolver()).isInstanceOf(QueryBuildException.class);
-		assertThatThrownBy(() -> resolver.getNamedResolver()).isInstanceOf(QueryBuildException.class);
+		assertThatThrownBy(() -> resolver.toNamed()).isInstanceOf(QueryBuildException.class);
+		assertThatThrownBy(() -> resolver.toNamed()).isInstanceOf(QueryBuildException.class);
 		verifyZeroInteractions(namedSupplier);
 	}
 }

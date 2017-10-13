@@ -15,14 +15,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.jaregu.database.queries.Queries;
-import com.jaregu.database.queries.RetativeQueries;
-import com.jaregu.database.queries.building.ParameterBindingCollectionBuilderImpl.RestParametersType;
+import com.jaregu.database.queries.RelativeQueries;
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.building.QueryBuildException;
 import com.jaregu.database.queries.compiling.PreparedQuery;
 import com.jaregu.database.queries.ext.OffsetLimit;
 import com.jaregu.database.queries.ext.PageableSearch;
-import com.jaregu.database.queries.ext.SortProperties;
+import com.jaregu.database.queries.ext.SortBy;
 import com.jaregu.database.queries.ext.SortableSearch;
 import com.jaregu.database.queries.parsing.QueriesSource;
 import com.zaxxer.hikari.HikariConfig;
@@ -34,7 +33,7 @@ public class SampleQueries {
 	private Database db;
 	private QueriesSource source;
 	private Queries queries;
-	private RetativeQueries rq;
+	private RelativeQueries rq;
 
 	@Before
 	public void setUp() {
@@ -42,7 +41,7 @@ public class SampleQueries {
 									// createLocalMariaDb();
 		source = QueriesSource.ofResource("com/jaregu/queries/example/sample-queries.sql");
 		queries = Queries.of(source);
-		rq = queries.ofSource(source.getId());
+		rq = queries.relativeTo(source.getId());
 
 		// oracle.jdbc.driver.OracleDriver aa = new OracleDriver();
 
@@ -161,9 +160,8 @@ public class SampleQueries {
 	@Test
 	public void inClauseCollectionSupportAnonymous() {
 		// by default there is no in clause support but it is easy to add some
-		RetativeQueries rq = Queries.builder()
-				.binderWithCollectionSupport(Arrays.asList(1, 3, 10), RestParametersType.NULL).source(source).build()
-				.ofSource(source.getId());
+		RelativeQueries rq = Queries.builder().binderForCollectionsAndLastValueNull(Arrays.asList(1, 3, 10))
+				.source(source).build().relativeTo(source.getId());
 
 		Query query = rq.get("in-clause-support-anonymous").build((Object) Arrays.asList(1, 3));
 		assertThat(query.getSql()).containsSequence("(?,?,?)");
@@ -175,9 +173,8 @@ public class SampleQueries {
 	@Test
 	public void inClauseCollectionSupportNamed() {
 		// by default there is no in clause support but it is easy to add some
-		RetativeQueries rq = Queries.builder()
-				.binderWithCollectionSupport(Arrays.asList(1, 3, 10), RestParametersType.LAST_VALUE).source(source)
-				.build().ofSource(source.getId());
+		RelativeQueries rq = Queries.builder().binderForCollectionsAndLastValueRepeated(Arrays.asList(1, 3, 10))
+				.source(source).build().relativeTo(source.getId());
 
 		Query query = rq.get("in-clause-support-named").build("collectionOfIds", Arrays.asList(1, 3));
 		assertThat(query.getSql()).containsSequence("(?,?,?)");
@@ -189,9 +186,8 @@ public class SampleQueries {
 	@Test
 	public void inClauseCollectionSupportOptionalNamed() {
 		// by default there is no in clause support but it is easy to add some
-		RetativeQueries rq = Queries.builder()
-				.binderWithCollectionSupport(Arrays.asList(4), RestParametersType.LAST_VALUE).source(source).build()
-				.ofSource(source.getId());
+		RelativeQueries rq = Queries.builder().binderForCollectionsAndLastValueRepeated(Arrays.asList(4)).source(source)
+				.build().relativeTo(source.getId());
 
 		Query query = rq.get("in-clause-support-optional-named").build("collectionOfIds", Arrays.asList(1));
 		assertThat(query.getSql()).containsSequence("(?,?,?,?");
@@ -380,7 +376,7 @@ public class SampleQueries {
 		private String barStarts;
 		private String barContains;
 		private OffsetLimit offsetLimit = OffsetLimit.empty();
-		private SortProperties sortProperties = SortProperties.empty();
+		private SortBy sortProperties = SortBy.empty();
 
 		public String getBarEq() {
 			return barEq;
@@ -415,12 +411,12 @@ public class SampleQueries {
 		}
 
 		@Override
-		public SortProperties getSortProperties() {
+		public SortBy getSortBy() {
 			return sortProperties;
 		}
 
 		@Override
-		public void setSortProperties(SortProperties properties) {
+		public void setSortBy(SortBy properties) {
 			this.sortProperties = properties;
 		}
 

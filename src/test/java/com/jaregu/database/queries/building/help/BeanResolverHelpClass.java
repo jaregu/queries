@@ -23,14 +23,17 @@ public class BeanResolverHelpClass {
 		 * 
 		 * @return
 		 */
+		@SuppressWarnings("unused")
 		public String getPublicBar() {
 			return "public-bar";
 		}
 
+		@SuppressWarnings("unused")
 		protected String getProtectedBar() {
 			return "protected-bar";
 		}
 
+		@SuppressWarnings("unused")
 		private String getPrivateBar() {
 			return "private-bar";
 		}

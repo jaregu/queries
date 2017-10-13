@@ -8,22 +8,21 @@ public interface NamedResolver {
 
 	/**
 	 * Returns the value of given variable, which could be null.
-	 *
+	 * 
 	 * @throws QueryBuildException
 	 *             if resolution fails
+	 * @param variable
+	 * @return
 	 */
 	Object getValue(String variable);
 
-	public static NamedResolver empty() {
-		return variable -> {
-			throw new QueryBuildException("Empty variable resolver! Cannot resolve variable: " + variable);
-		};
-	}
-
 	/**
 	 * Returns a {@link NamedResolver} that is backed by given map.
+	 * 
+	 * @param map
+	 * @return
 	 */
-	public static NamedResolver forMap(Map<String, ?> map) {
+	public static NamedResolver ofMap(Map<String, ?> map) {
 		return variable -> {
 			Object value = map.get(variable);
 			if (value != null || map.containsKey(variable)) {
@@ -38,16 +37,22 @@ public interface NamedResolver {
 	 * Returns a {@link NamedResolver} that is backed by given bean. When
 	 * variables are looked up, tries to find a matching getter or accessible
 	 * field for the variable and returns its value. Supports nested beans.
+	 * 
+	 * @param object
+	 * @return
 	 */
-	public static NamedResolver forBean(Object object) {
+	public static NamedResolver ofBean(Object object) {
 		return new BeanResolver(object);
 	}
 
 	/**
 	 * Returns a {@link NamedResolver} that is backed by given list. Variable
 	 * names must be valid indexes.
+	 * 
+	 * @param list
+	 * @return
 	 */
-	public static NamedResolver forList(List<?> list) {
+	public static NamedResolver ofList(List<?> list) {
 		return variable -> {
 			int index;
 			try {

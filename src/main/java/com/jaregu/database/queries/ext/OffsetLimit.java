@@ -1,9 +1,15 @@
 package com.jaregu.database.queries.ext;
 
+import java.io.Serializable;
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.jaregu.database.queries.dialect.Pageable;
 
-final public class OffsetLimit {
+final public class OffsetLimit implements Pageable, Serializable {
+
+	private static final long serialVersionUID = 7553329792612426998L;
 
 	private static final OffsetLimit EMPTY = new OffsetLimit(null, null);
 
@@ -15,10 +21,12 @@ final public class OffsetLimit {
 		this.limit = limit;
 	}
 
+	@Override
 	public Integer getOffset() {
 		return offset;
 	}
 
+	@Override
 	public Integer getLimit() {
 		return limit;
 	}
@@ -57,6 +65,24 @@ final public class OffsetLimit {
 
 	public String toString() {
 		return "Paging{offset=" + offset + ", limit=" + limit + "}";
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this)
+			return true;
+
+		if (obj instanceof OffsetLimit) {
+			OffsetLimit other = (OffsetLimit) obj;
+			return Objects.equals(limit, other.limit) && Objects.equals(offset, other.offset);
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(limit, offset);
 	}
 
 	public static OffsetLimit empty() {

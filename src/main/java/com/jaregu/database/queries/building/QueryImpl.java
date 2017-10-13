@@ -1,30 +1,21 @@
 package com.jaregu.database.queries.building;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import com.jaregu.database.queries.dialect.Dialect;
-import com.jaregu.database.queries.ext.OffsetLimit;
-import com.jaregu.database.queries.ext.PageableSearch;
-import com.jaregu.database.queries.ext.SortProperties;
-import com.jaregu.database.queries.ext.SortProperty;
-import com.jaregu.database.queries.ext.SortableSearch;
+import com.jaregu.database.queries.dialect.Orderable;
+import com.jaregu.database.queries.dialect.Pageable;
 
 public final class QueryImpl implements Query {
 
 	private final String sql;
 	private final List<?> parameters;
 	private final Map<String, ?> attributes;
-	private final Dialect dialect;
+	private transient final Dialect dialect;
 
 	public QueryImpl(String sql, List<?> parameters, Map<String, ?> attributes, Dialect dialect) {
 		this.sql = sql;
@@ -49,53 +40,12 @@ public final class QueryImpl implements Query {
 	}
 
 	@Override
-	public <T> T map(Function<Query, T> mapper) {
-		return mapper.apply(this);
+	public Query toOrderedQuery(Orderable orderable) {
+		return dialect.toOrderedQuery(this, orderable);
 	}
 
 	@Override
-	public Stream<Query> stream() {
-		return Stream.of(this);
-	}
-
-	@Override
-	public void consume(Consumer<Query> consumer) {
-		consumer.accept(this);
-	}
-
-	@Override
-	public Query toSortedQuery(String... sortPorperties) {
-		return toSortedQuery(Arrays.asList(sortPorperties));
-	}
-
-	@Override
-	public Query toSortedQuery(Iterable<String> sortPorperties) {
-		return toSortedQuery(SortProperties.of(StreamSupport.stream(sortPorperties.spliterator(), false)
-				.map(SortProperty::of).collect(Collectors.toList())));
-	}
-
-	@Override
-	public Query toSortedQuery(SortableSearch sortableSearch) {
-		return toSortedQuery(sortableSearch.getSortProperties());
-	}
-
-	@Override
-	public Query toSortedQuery(SortProperties sortProperties) {
-		return dialect.toSortedQuery(this, sortProperties);
-	}
-
-	@Override
-	public Query toPagedQuery(PageableSearch pageableSearch) {
-		return toPagedQuery(pageableSearch.getOffsetLimit());
-	}
-
-	@Override
-	public Query toPagedQuery(int offset, int limit) {
-		return toPagedQuery(OffsetLimit.of(offset, limit));
-	}
-
-	@Override
-	public Query toPagedQuery(OffsetLimit offsetLimit) {
+	public Query toPagedQuery(Pageable offsetLimit) {
 		return dialect.toPagedQuery(this, offsetLimit);
 	}
 
@@ -130,7 +80,8 @@ public final class QueryImpl implements Query {
 
 		if (obj instanceof QueryImpl) {
 			QueryImpl other = (QueryImpl) obj;
-			return sql.equals(other.sql) && parameters.equals(other.parameters) && attributes.equals(other.attributes);
+			return Objects.equals(sql, other.sql) && Objects.equals(parameters, other.parameters)
+					&& Objects.equals(attributes, other.attributes);
 		}
 
 		return false;

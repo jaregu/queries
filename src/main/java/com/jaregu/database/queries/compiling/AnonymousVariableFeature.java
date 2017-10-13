@@ -55,7 +55,7 @@ final class AnonymousVariableFeature implements QueryCompilerFeature {
 		@Override
 		public Result build(ParametersResolver resolver) {
 
-			IteratorResolver iteratorParameters = resolver.getIteratorResolver();
+			IteratorResolver iteratorParameters = resolver.toIterator();
 			if (!iteratorParameters.hasNext()) {
 				throw new QueryBuildException(
 						"Can't resolve parameter for for binding! Parameters iterator was empty or is exausted!");
@@ -63,7 +63,7 @@ final class AnonymousVariableFeature implements QueryCompilerFeature {
 			Object value = iteratorParameters.next();
 			ParameterBinder.Result result = parameterBinder.process(value);
 
-			return new PreparedQueryPartResultImpl(Optional.of(result.getSql()), result.getParemeters(),
+			return new PreparedQueryPartResultImpl(Optional.of(result.getSql()), result.getParameters(),
 					Collections.emptyMap());
 		}
 

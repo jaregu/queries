@@ -49,7 +49,6 @@ public class BeanResolverTest {
 		public String getFoo();
 	}
 
-	// TODO move to test
 	public static class SomeBase {
 
 		public int aaa = 123;
@@ -89,6 +88,10 @@ public class BeanResolverTest {
 
 		public String getCcc() {
 			return ccc;
+		}
+
+		public void incNotVisible() {
+			this.notVisible = this.notVisible + 1;
 		}
 	}
 }

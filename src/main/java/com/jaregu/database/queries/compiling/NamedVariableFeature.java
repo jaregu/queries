@@ -59,11 +59,11 @@ final class NamedVariableFeature implements QueryCompilerFeature {
 		@Override
 		public Result build(ParametersResolver resolver) {
 
-			NamedResolver namedParameters = resolver.getNamedResolver();
+			NamedResolver namedParameters = resolver.toNamed();
 			Object value = namedParameters.getValue(variableName);
 			ParameterBinder.Result result = parameterBinder.process(value);
 
-			return new PreparedQueryPartResultImpl(Optional.of(result.getSql()), result.getParemeters(),
+			return new PreparedQueryPartResultImpl(Optional.of(result.getSql()), result.getParameters(),
 					Collections.emptyMap());
 		}
 

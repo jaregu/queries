@@ -2,6 +2,7 @@ package com.jaregu.database.queries;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -14,7 +15,7 @@ public class SourceIdTest {
 	}
 
 	@Test
-	public void testStringCreation() throws Exception {
+	public void testIdCreation() throws Exception {
 		assertEquals("aaaBBB", SourceId.ofId("aaaBBB").getId());
 		assertEquals("aaaBBB", SourceId.ofId("aaaBBB ").getId());
 		assertEquals("aaaBBB", SourceId.ofId(" aaaBBB").getId());
@@ -22,7 +23,7 @@ public class SourceIdTest {
 	}
 
 	@Test
-	public void testFileNameCreation() throws Exception {
+	public void testResourceCreation() throws Exception {
 		assertEquals("aaa.bbb.ccc", SourceId.ofResource("aaa/bbb/ccc").getId());
 		assertEquals("aaa.bbb.ccc", SourceId.ofResource("aaa/bbb/ccc.pdf").getId());
 		assertEquals("aaa.bbb.ccc", SourceId.ofResource("/aaa/bbb/ccc").getId());
@@ -31,6 +32,13 @@ public class SourceIdTest {
 		assertEquals("aaa.bbb.ccc", SourceId.ofResource("aaa\\bbb\\ccc.pdf").getId());
 		assertEquals("aaa.bbb.ccc", SourceId.ofResource("\\aaa\\bbb\\ccc").getId());
 		assertEquals("aaa.bbb.ccc", SourceId.ofResource("\\aaa\\bbb\\ccc.pdf").getId());
+	}
+
+	@Test
+	public void testQueryIdCreation() throws Exception {
+		SourceId sourceId = SourceId.ofId("aaa");
+		assertEquals("bbb", sourceId.getQueryId("bbb").getId());
+		assertSame(sourceId, sourceId.getQueryId("bbb").getSourceId());
 	}
 
 	@Test

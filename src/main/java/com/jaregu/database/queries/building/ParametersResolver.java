@@ -4,11 +4,28 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.jaregu.database.queries.compiling.PreparedQuery;
+
+/**
+ * Implementations is used to contain parameters for successful {@link Query}
+ * building using {@link PreparedQuery} build methods. Depending on SQL
+ * statement {@link #toNamed()} or {@link #toIterator()} will be called.
+ * <p>
+ * 
+ * {@link ParametersResolver} has to support only one type resolving. First call
+ * <i>wins</i> and it is error to call other resolving method even when backing
+ * data supports both resolvers.
+ * <p>
+ * 
+ * Interface also contains static create methods for ParametersResolver
+ * creation.
+ *
+ */
 public interface ParametersResolver {
 
-	NamedResolver getNamedResolver();
+	NamedResolver toNamed();
 
-	IteratorResolver getIteratorResolver();
+	IteratorResolver toIterator();
 
 	public static ParametersResolver empty() {
 		return new ParametersResolverImpl(() -> {
@@ -19,19 +36,19 @@ public interface ParametersResolver {
 	}
 
 	public static ParametersResolver ofObject(Object object) {
-		return new ParametersResolverImpl(() -> new BeanResolver(object),
-				() -> new IteratorResolverImpl(Collections.singletonList(object)));
+		return new ParametersResolverImpl(() -> NamedResolver.ofBean(object),
+				() -> IteratorResolver.of(Collections.singletonList(object)));
 	}
 
 	public static ParametersResolver ofMap(Map<String, ?> map) {
-		return new ParametersResolverImpl(() -> NamedResolver.forMap(map), () -> {
+		return new ParametersResolverImpl(() -> NamedResolver.ofMap(map), () -> {
 			throw new QueryBuildException("Can't create iterable parameters resolver from map!");
 		});
 	}
 
 	public static ParametersResolver ofList(List<?> parameters) {
-		return new ParametersResolverImpl(() -> NamedResolver.forList(parameters),
-				() -> new IteratorResolverImpl(parameters));
+		return new ParametersResolverImpl(() -> NamedResolver.ofList(parameters),
+				() -> IteratorResolver.of(parameters));
 	}
 
 	public static ParametersResolver ofNamedParameters(NamedResolver parameters) {
@@ -49,6 +66,6 @@ public interface ParametersResolver {
 	public static ParametersResolver ofIterable(Iterable<?> parameters) {
 		return new ParametersResolverImpl(() -> {
 			throw new QueryBuildException("Can't create named parameters resolver from iterable parameters!");
-		}, () -> new IteratorResolverImpl(parameters));
+		}, () -> IteratorResolver.of(parameters));
 	}
 }

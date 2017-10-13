@@ -8,9 +8,9 @@ import java.util.List;
  * <p>
  * 
  * Usually parameter binder can be used to create some <code>IN</code> clause
- * support.
+ * support or for some SQL parameter value wrapping/unwrapping
  * 
- * See {@link ParameterBinders#binder(ParameterBinder)}
+ * See {@link Binders#binder(ParameterBinder)}
  */
 public interface ParameterBinder {
 
@@ -20,6 +20,6 @@ public interface ParameterBinder {
 
 		String getSql();
 
-		List<Object> getParemeters();
+		List<Object> getParameters();
 	}
 }

@@ -8,6 +8,13 @@ import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
 import com.jaregu.database.queries.common.StreamReader;
 
+/**
+ * Implementations represents one SQL statements source. In one source can be
+ * multiple statements. Implement this interface or use one of
+ * {@link #ofClass(Class)}, {@link #ofResource(String)},
+ * {@link #ofContent(SourceId, Supplier)} creator methods.
+ *
+ */
 public interface QueriesSource {
 
 	SourceId getId();
@@ -16,6 +23,15 @@ public interface QueriesSource {
 
 	String getContent();
 
+	/**
+	 * Queries SQL source coming from supplier, can be used to load SQL content
+	 * from anywhere, not only from classpath. See also {@link #ofClass(Class)}
+	 * and {@link #ofResource(String)}
+	 * 
+	 * @param sourceId
+	 * @param contentSupplier
+	 * @return
+	 */
 	public static QueriesSource ofContent(SourceId sourceId, Supplier<String> contentSupplier) {
 		return new QueriesSourceImpl(sourceId, contentSupplier);
 	}

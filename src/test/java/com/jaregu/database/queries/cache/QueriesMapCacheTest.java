@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -49,7 +51,7 @@ public class QueriesMapCacheTest {
 	public void setUp() {
 
 	}
-	
+
 	@Test
 	public void testGetSourceQueries() throws Exception {
 
@@ -59,19 +61,23 @@ public class QueriesMapCacheTest {
 		sources.put(SourceId.ofId("ccc"), sourceQueriesC);
 
 		Map<SourceId, Integer> invokedCounts = new ConcurrentHashMap<>();
-		Function<SourceId, ParsedQueries> sourceQueriesSupplier = (id) -> {
-			invokedCounts.compute(id, (key, curr) -> curr == null ? 1 : curr + 1);
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-			return sources.get(id);
-		};
+
+		List<Supplier<ParsedQueries>> suppliers = sources.entrySet().stream().map(e -> {
+			Supplier<ParsedQueries> sourceQueriesSupplier = () -> {
+				invokedCounts.compute(e.getKey(), (key, curr) -> curr == null ? 1 : curr + 1);
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException exc) {
+					throw new RuntimeException(exc);
+				}
+				return sources.get(e.getKey());
+			};
+			return sourceQueriesSupplier;
+		}).collect(Collectors.toList());
 
 		List<SourceId> keys = new ArrayList<>(sources.keySet());
 		List<ParsedQueries> results = doRequest(
-				(index) -> cache.getParsedQueries(keys.get(index % 3), sourceQueriesSupplier), 30);
+				(index) -> cache.getParsedQueries(keys.get(index % 3), suppliers.get(index % 3)), 30);
 
 		for (int count : invokedCounts.values()) {
 			assertEquals(1, count);
@@ -91,19 +97,23 @@ public class QueriesMapCacheTest {
 		sources.put(QueryId.of("2.2"), compiledQuery3);
 
 		Map<QueryId, Integer> invokedCounts = new ConcurrentHashMap<>();
-		Function<QueryId, PreparedQuery> sourceQueriesSupplier = (id) -> {
-			invokedCounts.compute(id, (key, curr) -> curr == null ? 1 : curr + 1);
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-			return sources.get(id);
-		};
+
+		List<Supplier<PreparedQuery>> suppliers = sources.entrySet().stream().map(e -> {
+			Supplier<PreparedQuery> sourceQueriesSupplier = () -> {
+				invokedCounts.compute(e.getKey(), (key, curr) -> curr == null ? 1 : curr + 1);
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException exc) {
+					throw new RuntimeException(exc);
+				}
+				return sources.get(e.getKey());
+			};
+			return sourceQueriesSupplier;
+		}).collect(Collectors.toList());
 
 		List<QueryId> keys = new ArrayList<>(sources.keySet());
 		List<PreparedQuery> results = doRequest(
-				(index) -> cache.getPreparedQuery(keys.get(index % 3), sourceQueriesSupplier), 30);
+				(index) -> cache.getPreparedQuery(keys.get(index % 3), suppliers.get(index % 3)), 30);
 
 		for (int count : invokedCounts.values()) {
 			assertEquals(1, count);
@@ -117,7 +127,7 @@ public class QueriesMapCacheTest {
 	private <T> List<T> doRequest(Function<Integer, T> runWhat, int howMuchThreads) {
 		List<T> result = new ArrayList<>(howMuchThreads);
 		List<Thread> runners = new LinkedList<>();
-		//List<T> result = new ArrayList<>(howMuchThreads);
+		// List<T> result = new ArrayList<>(howMuchThreads);
 		for (int i = 0; i < howMuchThreads; i++) {
 			int j = i;
 			result.add(null);

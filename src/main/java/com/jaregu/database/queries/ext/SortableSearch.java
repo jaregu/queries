@@ -1,40 +1,43 @@
 package com.jaregu.database.queries.ext;
 
-import static com.jaregu.database.queries.ext.SortProperties.empty;
+import static com.jaregu.database.queries.ext.SortBy.empty;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.List;
 
-public interface SortableSearch {
+import com.jaregu.database.queries.dialect.Orderable;
 
-	SortProperties getSortProperties();
+public interface SortableSearch extends Orderable {
 
-	void setSortProperties(SortProperties properties);
+	SortBy getSortBy();
+
+	void setSortBy(SortBy properties);
 
 	default boolean hasSortProperties() {
-		return getSortProperties() != null && !getSortProperties().isEmpty();
+		return getSortBy() != null && !getSortBy().isEmpty();
 	}
 
-	default String sortPropertiesToSql() {
-		return getSortProperties().toSql();
+	@Override
+	default List<String> getOrderByItems() {
+		return getSortBy().getOrderByItems();
 	}
 
 	default void clearSortProperties() {
-		setSortProperties(empty());
+		setSortBy(empty());
 	}
 
 	default void addSortProperty(SortProperty property) {
-		setSortProperties((getSortProperties() != null ? getSortProperties() : empty()).add(property));
+		setSortBy((getSortBy() != null ? getSortBy() : empty()).add(property));
 	}
 
 	default void addSort(String property) {
-		setSortProperties((getSortProperties() != null ? getSortProperties() : empty()).add(property));
+		setSortBy((getSortBy() != null ? getSortBy() : empty()).add(property));
 	}
 
 	default void addSortAsc(String property) {
-		setSortProperties((getSortProperties() != null ? getSortProperties() : empty()).addAsc(property));
+		setSortBy((getSortBy() != null ? getSortBy() : empty()).addAsc(property));
 	}
 
 	default void addSortDesc(String property) {
-		setSortProperties((getSortProperties() != null ? getSortProperties() : empty()).addDesc(property));
+		setSortBy((getSortBy() != null ? getSortBy() : empty()).addDesc(property));
 	}
 }

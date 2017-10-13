@@ -4,11 +4,12 @@ import java.util.function.Supplier;
 
 final class ParametersResolverImpl implements ParametersResolver {
 
-	private Object lock = new Object();
+	private final Object lock = new Object();
+	private final Supplier<NamedResolver> namedSupplier;
+	private final Supplier<IteratorResolver> iteratorSupplier;
+
 	private boolean resolved = false;
-	private Supplier<NamedResolver> namedSupplier;
 	private NamedResolver namedParameters;
-	private Supplier<IteratorResolver> iteratorSupplier;
 	private IteratorResolver iteratorParameters;
 
 	public ParametersResolverImpl(Supplier<NamedResolver> namedSupplier, Supplier<IteratorResolver> iteratorSupplier) {
@@ -17,21 +18,21 @@ final class ParametersResolverImpl implements ParametersResolver {
 	}
 
 	@Override
-	public NamedResolver getNamedResolver() {
+	public NamedResolver toNamed() {
 		resolveIfNotResolved(() -> namedParameters = namedSupplier.get());
 		if (namedParameters == null) {
 			throw new QueryBuildException("Parameter resolver was already resolved as iterator resolver!"
-					+ " Probably query contains named (:name) and anonymous (?) parameters!");
+					+ " Probably query contains mixed named (:name) and anonymous (?) parameters!");
 		}
 		return namedParameters;
 	}
 
 	@Override
-	public IteratorResolver getIteratorResolver() {
+	public IteratorResolver toIterator() {
 		resolveIfNotResolved(() -> iteratorParameters = iteratorSupplier.get());
 		if (iteratorParameters == null) {
 			throw new QueryBuildException("Parameter resolver was already resolved as named resolver!"
-					+ " Probably query contains named (:name) and anonymous (?) parameters!");
+					+ " Probably query contains mixed named (:name) and anonymous (?) parameters!");
 		}
 		return iteratorParameters;
 	}

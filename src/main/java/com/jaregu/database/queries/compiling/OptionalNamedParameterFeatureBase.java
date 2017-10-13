@@ -164,7 +164,7 @@ public abstract class OptionalNamedParameterFeatureBase implements QueryCompiler
 				Object value = expressionResult.getReturnValue();
 				ParameterBinder.Result variableBindingResult = parameterBinder.process(value);
 				String sql = beforeSql + variableBindingResult.getSql() + afterSql;
-				List<Object> parameters = variableBindingResult.getParemeters();
+				List<Object> parameters = variableBindingResult.getParameters();
 				return new PreparedQueryPartResultImpl(Optional.of(sql), parameters,
 						expressionResult.getOutputVariables());
 			} else {
@@ -182,7 +182,7 @@ public abstract class OptionalNamedParameterFeatureBase implements QueryCompiler
 				}
 				return (Boolean) conditionResult;
 			} else {
-				NamedResolver namedResolver = resolver.getNamedResolver();
+				NamedResolver namedResolver = resolver.toNamed();
 				List<String> usedVariables = valueExpression.getVariableNames();
 				if (usedVariables.size() == 1) {
 					String variableName = usedVariables.get(0);

@@ -1,18 +1,17 @@
 package com.jaregu.database.queries;
 
+import java.lang.annotation.Annotation;
+import java.util.Map;
+
 import com.jaregu.database.queries.building.ParameterBinder;
-import com.jaregu.database.queries.cache.QueriesCache;
 import com.jaregu.database.queries.dialect.Dialect;
+import com.jaregu.database.queries.proxy.QueryMapperFactory;
 
 public interface QueriesConfig {
-
-	QueriesCache getCache();
 
 	Dialect getDialect();
 
 	ParameterBinder getParameterBinder();
 
-	static QueriesConfig of(Dialect dialect, QueriesCache cache, ParameterBinder parameterBinder) {
-		return new QueriesConfigImpl(dialect, cache, parameterBinder);
-	}
+	Map<Class<? extends Annotation>, QueryMapperFactory> getQueryMapperFactories();
 }
