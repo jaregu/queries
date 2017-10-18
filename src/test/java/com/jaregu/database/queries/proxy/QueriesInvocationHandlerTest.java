@@ -38,8 +38,8 @@ import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.compiling.PreparedQuery;
 import com.jaregu.database.queries.ext.OffsetLimit;
 import com.jaregu.database.queries.ext.PageableSearch;
-import com.jaregu.database.queries.ext.SortBy;
-import com.jaregu.database.queries.ext.SortableSearch;
+import com.jaregu.database.queries.ext.OrderBy;
+import com.jaregu.database.queries.ext.OrderableSearch;
 
 @RunWith(MockitoJUnitRunner.class)
 public class QueriesInvocationHandlerTest {
@@ -96,10 +96,10 @@ public class QueriesInvocationHandlerTest {
 
 		when(query11.toCountQuery()).thenReturn(query11);
 		when(query11.toPagedQuery((PageableSearch) any())).thenReturn(query11);
-		when(query11.toOrderedQuery((SortableSearch) any())).thenReturn(query11);
+		when(query11.toOrderedQuery((OrderableSearch) any())).thenReturn(query11);
 
 		when(query12.toPagedQuery((PageableSearch) any())).thenReturn(query12);
-		when(query12.toOrderedQuery((SortableSearch) any())).thenReturn(query12);
+		when(query12.toOrderedQuery((OrderableSearch) any())).thenReturn(query12);
 
 		// when(query12.toCountQuery()).thenReturn(query12);
 		// when(query12.toPagedQuery((PageableSearch)
@@ -370,10 +370,10 @@ public class QueriesInvocationHandlerTest {
 				.isInstanceOf(QueryProxyException.class);
 	}
 
-	public static class Search implements SortableSearch, PageableSearch {
+	public static class Search implements OrderableSearch, PageableSearch {
 
 		private OffsetLimit offsetLimit;
-		private SortBy sortBy;
+		private OrderBy sortBy;
 
 		@Override
 		public OffsetLimit getOffsetLimit() {
@@ -386,12 +386,12 @@ public class QueriesInvocationHandlerTest {
 		}
 
 		@Override
-		public SortBy getSortBy() {
+		public OrderBy getOrderBy() {
 			return sortBy;
 		}
 
 		@Override
-		public void setSortBy(SortBy properties) {
+		public void setOrderBy(OrderBy properties) {
 			this.sortBy = properties;
 		}
 
@@ -438,10 +438,10 @@ public class QueriesInvocationHandlerTest {
 
 		@QueriesSourceId("second.source")
 		@QueryRef(value = "2-1", toPaged = true, toSorted = true)
-		public Query getToPageableAndSortableError(SortableSearch search);
+		public Query getToPageableAndSortableError(OrderableSearch search);
 
 		@QueryRef(value = "1-1", toSorted = true, toPaged = true, toCount = true)
-		public Query getToAllError(SortableSearch search);
+		public Query getToAllError(OrderableSearch search);
 
 		@QueryRef(value = "1-1", toPaged = true)
 		public Query getToPageable(Search search);

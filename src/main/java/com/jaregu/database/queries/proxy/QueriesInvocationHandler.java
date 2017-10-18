@@ -20,7 +20,7 @@ import com.jaregu.database.queries.SourceId;
 import com.jaregu.database.queries.building.ParametersResolver;
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.ext.PageableSearch;
-import com.jaregu.database.queries.ext.SortableSearch;
+import com.jaregu.database.queries.ext.OrderableSearch;
 
 public final class QueriesInvocationHandler implements InvocationHandler {
 
@@ -105,7 +105,7 @@ public final class QueriesInvocationHandler implements InvocationHandler {
 		if (queryRef.toSorted() || queryRef.toPaged() || queryRef.toCount()) {
 			Class<?>[] parameterTypes = method.getParameterTypes();
 			if (queryRef.toSorted()) {
-				if (parameterTypes.length != 1 || !SortableSearch.class.isAssignableFrom(parameterTypes[0]))
+				if (parameterTypes.length != 1 || !OrderableSearch.class.isAssignableFrom(parameterTypes[0]))
 					throw new QueryProxyException("If used toSorted then " + method.getDeclaringClass().getName()
 							+ " method " + method.getName()
 							+ " must have exactly one parameter and it must implement SortableSearch");
@@ -113,7 +113,7 @@ public final class QueriesInvocationHandler implements InvocationHandler {
 				QueryMapper<Query> before = converter;
 				converter = (query, args) -> {
 					Query result = before.map(query, args);
-					return result.toOrderedQuery((SortableSearch) args[0]);
+					return result.toOrderedQuery((OrderableSearch) args[0]);
 				};
 			}
 
