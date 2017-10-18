@@ -1,7 +1,19 @@
-# jaregu-queries
-2
-Java based SQL templating project. Store your queries in *.sql files and build queries for executing. Supports simple expressions and conditional clauses.
-3
+# Jaregu-queries
+
+Java based SQL templating project. Store your queries in sql files and build queries for executing.
+Main features:
+- SQL templating with conditional blocks
+- Built-in expression language for simple parameter conditions and tuning (parameter + '%')
+- Mandatory and optional parameter support
+- Anonymous, constant or named parameter naming support (use field = 'AAA' or field = ? or field = :aaa syntax)
+- Optional SQL IN clause support
+- Proxiable interfaces support (use interface with annotations to create bridge between sql file and java code)
+- DI supported (Optional Guice support included)
+- SQL Dialects for built-in SQL query conversion to COUNT, ORDER BY and LIMIT queries
+- Conversion support for queries (Proxied interface can return data from database using some defined coversion)
+- Optional queries caching possibility with some built-in
+- Query attributes support for executing, caching or some other layer (additional info about query)
+Supports simple expressions and conditional clauses.
 
 # Quick-start
 
