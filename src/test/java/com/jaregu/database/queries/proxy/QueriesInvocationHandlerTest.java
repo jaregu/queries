@@ -237,14 +237,14 @@ public class QueriesInvocationHandlerTest {
 	public void testOtherSource() {
 		TestBar testBar = createProxy(TestBar.class);
 
-		Query result = testBar.getOtherSourceQuery("key1-value", 222);
+		Query result = testBar.getOtherSourceQuery("key1-value", null);
 		verify(queries, times(1)).get(queryId21);
 		ArgumentCaptor<ParametersResolver> capturedResolver = ArgumentCaptor.forClass(ParametersResolver.class);
 		verify(preparedQuery21, times(1)).build(capturedResolver.capture());
 
 		assertThat(result).isSameAs(query21);
 		assertThat(capturedResolver.getValue().toNamed().getValue("key1")).isEqualTo("key1-value");
-		assertThat(capturedResolver.getValue().toNamed().getValue("key2")).isEqualTo(222);
+		assertThat(capturedResolver.getValue().toNamed().getValue("key2")).isNull();
 	}
 
 	@Test

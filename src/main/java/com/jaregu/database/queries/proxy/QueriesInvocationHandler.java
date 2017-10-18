@@ -4,14 +4,13 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -206,9 +205,12 @@ public final class QueriesInvocationHandler implements InvocationHandler {
 						}).findFirst().map(a -> (QueryParam) a).get().value()).toArray(String[]::new);
 
 				return args -> {
-					Map<String, Object> parameters = IntStream.range(0, parameterTypes.length)
-							.mapToObj(i -> new SimpleEntry<String, Object>(parameterNames[i], args[i]))
-							.collect(Collectors.toMap(se -> se.getKey(), se -> se.getValue()));
+					Map<String, Object> parameters = new LinkedHashMap<>(parameterTypes.length);
+					for (int i = 0; i < parameterTypes.length; i++) {
+						String name = parameterNames[i];
+						Object value = args[i];
+						parameters.put(name, value);
+					}
 					return ParametersResolver.ofMap(parameters);
 				};
 			} else if (parameterTypes.length == 1) {

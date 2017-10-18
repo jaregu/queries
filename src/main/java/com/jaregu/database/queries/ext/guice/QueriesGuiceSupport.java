@@ -18,7 +18,6 @@ import com.jaregu.database.queries.parsing.QueriesSource;
 import com.jaregu.database.queries.parsing.QueriesSources;
 import com.jaregu.database.queries.parsing.Sources;
 
-@Singleton
 public class QueriesGuiceSupport {
 
 	private QueriesGuiceSupport() {
@@ -31,13 +30,8 @@ public class QueriesGuiceSupport {
 
 				com.google.inject.Provider<SourcesCollector> provider = binder().getProvider(SourcesCollector.class);
 
-				bind(Queries.class).toProvider(new Provider<Queries>() {
-
-					@Override
-					public Queries get() {
-						return queriesSupplier.apply(provider.get().getSources());
-					}
-				});
+				bind(Queries.class).toProvider(() -> queriesSupplier.apply(provider.get().getSources()))
+						.in(Singleton.class);
 			}
 		};
 	}
