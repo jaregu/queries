@@ -292,11 +292,23 @@ public class SampleQueries {
 				"dd.foo = ?");
 		assertThat(new ArrayList<Object>(queryWithBlock3.getParameters())).containsOnly("2-5", 5);
 
-		//MME HSQL has problems with { brackets in comments see:
-		//https://sourceforge.net/p/hsqldb/discussion/73674/thread/a586f937/
-		
-		/*List<Dummy> rows = db.findAll(Dummy.class, toQuery(queryWithBlock3));
-		assertThat(rows).extracting("id", "bar").containsOnly(tuple(2, "2-5"));*/
+		// MME HSQL has problems with { brackets in comments see:
+		// https://sourceforge.net/p/hsqldb/discussion/73674/thread/a586f937/
+
+		/*
+		 * List<Dummy> rows = db.findAll(Dummy.class, toQuery(queryWithBlock3));
+		 * assertThat(rows).extracting("id", "bar").containsOnly(tuple(2,
+		 * "2-5"));
+		 */
+	}
+
+	@Test
+	public void selectAttributes() {
+		PreparedQuery blockQuery = rq.get("select-attrs");
+		Query attrsQuery = blockQuery.build("passThrough", "XXX", "id", 999);
+
+		assertThat(attrsQuery.getAttributes()).extracting("caching", "removeCachedAfterMin", "passThrough")
+				.containsExactly(true, 30, "XXX");
 	}
 
 	private SqlQuery toQuery(Query q) {

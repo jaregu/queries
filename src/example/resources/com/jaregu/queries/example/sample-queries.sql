@@ -111,10 +111,12 @@ where 1 = 1
 ;
 
 -- select-attrs
-/* maybe there is need for some additional parameters for query, like information for some query executing layer
- for example how long can we cache result of this query, for parameter(s) use syntax like: param_1 = value_expression_1 [; param_2 = value_expression_2 ]...[;param_n = value_expression_n] 
+/* maybe there is need for some additional parameters for query, like information for query executing layer
+ for example how long can we cache result of this query, for parameter(s) use syntax 
+ like: param_1 = value_expression_1 [; param_2 = value_expression_2 ]...[;param_n = value_expression_n] 
  it is possible to even use passed in parameters, example below */
--- caching = true; removeCachedAfterMin = 12; passThrough = :passThrough
+-- caching = true; removeCachedAfterMin = (12 + 3) * 2; passThrough = :passThrough
 select *
 from dummy
 where id = :id
+
