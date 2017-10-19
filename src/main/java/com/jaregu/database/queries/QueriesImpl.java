@@ -42,6 +42,11 @@ public final class QueriesImpl implements Queries {
 	}
 
 	@Override
+	public PreparedQuery get(String queryId) {
+		return get(QueryId.of(queryId));
+	}
+
+	@Override
 	public PreparedQuery get(QueryId queryId) {
 		return cache.getPreparedQuery(queryId, () -> prepareQuery(queryId));
 	}

@@ -13,6 +13,7 @@ import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.cache.Caches;
 import com.jaregu.database.queries.cache.QueriesCache;
+import com.jaregu.database.queries.compiling.PreparedQuery;
 import com.jaregu.database.queries.compiling.QueryCompiler;
 import com.jaregu.database.queries.dialect.Dialect;
 import com.jaregu.database.queries.dialect.Dialects;
@@ -68,6 +69,14 @@ import com.jaregu.database.queries.proxy.QueryMapperFactory;
  * 
  */
 public interface Queries extends QueriesFinder<QueryId> {
+
+	/**
+	 * Returns cached {@link PreparedQuery} (see {@link QueriesCache}) or
+	 * prepare one using supplied SQL sources. Shorthand for
+	 * {@link Queries#get(QueryId)} with {@link QueryId#of(String)}
+	 * 
+	 */
+	PreparedQuery get(String queryId);
 
 	RelativeQueries relativeTo(SourceId sourceId);
 

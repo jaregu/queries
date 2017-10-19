@@ -125,6 +125,13 @@ public class QueriesImplTest {
 	}
 
 	@Test
+	public void testStringGet() {
+		sourcesCached();
+		PreparedQuery query11 = queries.get("com.jaregu.database.queries.QueriesImplTest.1-1");
+		assertThat(query11).isSameAs(preparedQuery11);
+	}
+
+	@Test
 	public void testNonCachedGet() {
 		noCache();
 
