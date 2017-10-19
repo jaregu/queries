@@ -15,6 +15,6 @@ public interface Expression {
 
 		Object getReturnValue();
 
-		Map<String, Object> getOutputVariables();
+		Map<String, ?> getOutputVariables();
 	}
 }

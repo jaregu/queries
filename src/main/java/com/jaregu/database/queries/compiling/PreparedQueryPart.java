@@ -37,8 +37,8 @@ public interface PreparedQueryPart {
 
 		Optional<String> getSql();
 
-		List<Object> getParameters();
+		List<?> getParameters();
 
-		Map<String, Object> getAttributes();
+		Map<String, ?> getAttributes();
 	}
 }

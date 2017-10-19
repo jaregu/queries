@@ -12,7 +12,7 @@ import com.jaregu.database.queries.building.QueryBuildException;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
 /**
- * Required bind parameter feature.
+ * Anonymous bind parameter feature.
  * 
  * Example SQL:
  * 

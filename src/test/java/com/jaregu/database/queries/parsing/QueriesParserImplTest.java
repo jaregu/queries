@@ -124,7 +124,7 @@ public class QueriesParserImplTest {
 
 	private void testQueries(TestQueries queries) {
 		String sql = queries.toString();
-		System.out.println(sql);
+		//System.out.println(sql);
 		ParsedQueries sourceQueries = null;
 		TestQuery query = null;
 		ParsedQuery sourceQuery = null;

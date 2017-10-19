@@ -7,10 +7,10 @@ import java.util.Optional;
 final class PreparedQueryPartResultImpl implements PreparedQueryPart.Result {
 
 	private final Optional<String> sql;
-	private final List<Object> parameters;
-	private final Map<String, Object> attributes;
+	private final List<?> parameters;
+	private final Map<String, ?> attributes;
 
-	PreparedQueryPartResultImpl(Optional<String> sql, List<Object> parameters, Map<String, Object> attributes) {
+	PreparedQueryPartResultImpl(Optional<String> sql, List<?> parameters, Map<String, ?> attributes) {
 		this.sql = sql;
 		this.parameters = parameters;
 		this.attributes = attributes;
@@ -22,12 +22,12 @@ final class PreparedQueryPartResultImpl implements PreparedQueryPart.Result {
 	}
 
 	@Override
-	public List<Object> getParameters() {
+	public List<?> getParameters() {
 		return parameters;
 	}
 
 	@Override
-	public Map<String, Object> getAttributes() {
+	public Map<String, ?> getAttributes() {
 		return attributes;
 	}
 }

@@ -29,7 +29,8 @@ class QueryCompilerImpl implements QueryCompiler, Compiler {
 				new BlockFeature(expressionParser),
 				new OptionalHyphenNamedParameterFeature(expressionParser, parameterBinder),
 				new OptionalSlashNamedParameterFeature(expressionParser, parameterBinder),
-				new NamedVariableFeature(parameterBinder), new AnonymousVariableFeature(parameterBinder));
+				new NamedVariableFeature(parameterBinder), new AnonymousVariableFeature(parameterBinder),
+				new AssignmentFeature(expressionParser));
 
 		return new QueryCompilerImpl(features, config.getDialect());
 	}
