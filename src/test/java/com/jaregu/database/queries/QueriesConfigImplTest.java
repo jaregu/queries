@@ -15,6 +15,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.dialect.Dialect;
+import com.jaregu.database.queries.proxy.QueryConverterFactory;
 import com.jaregu.database.queries.proxy.QueryMapperFactory;
 
 import groovy.lang.DelegatesTo.Target;
@@ -31,19 +32,32 @@ public class QueriesConfigImplTest {
 	private ParameterBinder binder;
 
 	@Mock
-	private QueryMapperFactory factory1;
+	private QueryMapperFactory mapper1;
 
 	@Mock
-	private QueryMapperFactory factory2;
+	private QueryMapperFactory mapper2;
 
-	private Map<Class<? extends Annotation>, QueryMapperFactory> factories;
+	private Map<Class<? extends Annotation>, QueryMapperFactory> mappers;
+
+	@Mock
+	private QueryConverterFactory converter1;
+
+	@Mock
+	private QueryConverterFactory converter2;
+
+	private Map<Class<? extends Annotation>, QueryConverterFactory> converters;
 
 	@Before
 	public void setUp() {
-		factories = new HashMap<>();
-		factories.put(Retention.class, factory1);
-		factories.put(Target.class, factory2);
-		config = new QueriesConfigImpl(dialect, binder, factories);
+		mappers = new HashMap<>();
+		mappers.put(Retention.class, mapper1);
+		mappers.put(Target.class, mapper2);
+
+		converters = new HashMap<>();
+		converters.put(Retention.class, converter1);
+		converters.put(Target.class, converter2);
+
+		config = new QueriesConfigImpl(dialect, binder, mappers, converters);
 	}
 
 	@Test
@@ -55,7 +69,8 @@ public class QueriesConfigImplTest {
 		assertThat(config.getDialect()).isSameAs(dialect);
 		assertThat(config.getParameterBinder()).isSameAs(binder);
 		assertThat(config.getQueryMapperFactories().values().stream().map(v -> (QueryMapperFactory) v))
-				.containsOnly(factory1, factory2);
-		assertThat(config.getQueryMapperFactories()).containsAllEntriesOf(factories);
+				.containsOnly(mapper1, mapper2);
+		assertThat(config.getQueryMapperFactories()).containsAllEntriesOf(mappers);
+		assertThat(config.getQueryConverterFactories()).containsAllEntriesOf(converters);
 	}
 }

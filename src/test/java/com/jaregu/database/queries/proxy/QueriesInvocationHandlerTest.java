@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,9 +38,9 @@ import com.jaregu.database.queries.building.ParametersResolver;
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.compiling.PreparedQuery;
 import com.jaregu.database.queries.ext.OffsetLimit;
-import com.jaregu.database.queries.ext.PageableSearch;
 import com.jaregu.database.queries.ext.OrderBy;
 import com.jaregu.database.queries.ext.OrderableSearch;
+import com.jaregu.database.queries.ext.PageableSearch;
 
 @RunWith(MockitoJUnitRunner.class)
 public class QueriesInvocationHandlerTest {
@@ -80,7 +81,9 @@ public class QueriesInvocationHandlerTest {
 	@Mock
 	private Query query31;
 
-	private Map<Class<? extends Annotation>, QueryMapperFactory> factories = new HashMap<>();
+	private Map<Class<? extends Annotation>, QueryMapperFactory> mappers = new HashMap<>();
+
+	private Map<Class<? extends Annotation>, QueryConverterFactory> converters = new HashMap<>();
 
 	@Before
 	public void setUp() {
@@ -113,13 +116,17 @@ public class QueriesInvocationHandlerTest {
 		// when(query21.toOrderedQuery((SortableSearch)
 		// any())).thenReturn(query21);
 
-		factories.put(CustomRegistered.class, new MapperFactory("REGISTERED_CustomRegistered_"));
-		factories.put(CustomWithoutMarkerRegistered.class,
+		mappers.put(CustomRegistered.class, new MapperFactory("REGISTERED_CustomRegistered_"));
+		mappers.put(CustomWithoutMarkerRegistered.class,
 				new MapperFactory("REGISTERED_CustomWithoutMarkerRegistered_"));
+
+		converters.put(ConverterCustomRegistered.class, new ConverterFactory("REGISTERED_ConverterCustomRegistered_"));
+		converters.put(ConverterCustomWithoutMarkerRegistered.class,
+				new ConverterFactory("REGISTERED_ConverterCustomWithoutMarkerRegistered_"));
 	}
 
 	private <T> T createProxy(Class<T> classOfInterface) {
-		InvocationHandler handler = new QueriesInvocationHandler(classOfInterface, queries, factories);
+		InvocationHandler handler = new QueriesInvocationHandler(classOfInterface, queries, mappers, converters);
 
 		@SuppressWarnings("unchecked")
 		T proxy = (T) Proxy.newProxyInstance(classOfInterface.getClassLoader(), new Class<?>[] { classOfInterface },
@@ -370,6 +377,34 @@ public class QueriesInvocationHandlerTest {
 				.isInstanceOf(QueryProxyException.class);
 	}
 
+	@Test
+	public void testMapping_ConverterCustomRegistered() {
+		TestBar testBar = createProxy(TestBar.class);
+		assertThat(testBar.getConverterCustomRegistered().getSql())
+				.isEqualTo("REGISTERED_ConverterCustomRegistered_ConverterCustomRegistered");
+	}
+
+	@Test
+	public void testMapping_ConverterCustomWithoutMarkerRegistered() {
+		TestBar testBar = createProxy(TestBar.class);
+		assertThat(testBar.getConverterCustomWithoutMarkerRegistered().getSql())
+				.isEqualTo("REGISTERED_ConverterCustomWithoutMarkerRegistered_ConverterCustomWithoutMarkerRegistered");
+	}
+
+	@Test
+	public void testMapping_ConverterCustomWithStaticFactory() {
+		TestBar testBar = createProxy(TestBar.class);
+		assertThat(testBar.getConverterCustomWithStaticFactory().getSql())
+				.isEqualTo("NOT_REGISTERED_ConverterCustomWithStaticFactory");
+	}
+
+	@Test
+	public void testMapping_ConverterCustomNotRegisteredError() {
+		TestBar testBar = createProxy(TestBar.class);
+		assertThatThrownBy(() -> testBar.getConverterCustomNotRegisteredError()).hasMessageContaining("not registered")
+				.isInstanceOf(QueryProxyException.class);
+	}
+
 	public static class Search implements OrderableSearch, PageableSearch {
 
 		private OffsetLimit offsetLimit;
@@ -495,6 +530,24 @@ public class QueriesInvocationHandlerTest {
 		@QueryRef("3-1")
 		@CustomNotRegisteredError
 		public String getCustomNotRegisteredError();
+
+		@QueryRef("1-1")
+		@ConverterCustomRegistered
+		public Query getConverterCustomRegistered();
+
+		@QueryRef("1-2")
+		@ConverterCustomWithoutMarkerRegistered
+		public Query getConverterCustomWithoutMarkerRegistered();
+
+		@QueriesSourceId("second.source")
+		@QueryRef("2-1")
+		@ConverterCustomWithStaticFactory
+		public Query getConverterCustomWithStaticFactory();
+
+		@QueriesSourceClass(QueriesInvocationHandlerTest.class)
+		@QueryRef("3-1")
+		@ConverterCustomNotRegisteredError
+		public Query getConverterCustomNotRegisteredError();
 	}
 
 	public class Params {
@@ -563,5 +616,49 @@ public class QueriesInvocationHandlerTest {
 	@Retention(RUNTIME)
 	@Mapper
 	public @interface CustomNotRegisteredError {
+	}
+
+	public static class ConverterFactory implements QueryConverterFactory {
+
+		private String prefix;
+
+		public ConverterFactory() {
+			this("NOT_REGISTERED_");
+		}
+
+		public ConverterFactory(String prefix) {
+			this.prefix = prefix;
+		}
+
+		@Override
+		public QueryConverter get(Annotation annotation) {
+			Query queryMock = mock(Query.class);
+			when(queryMock.getSql()).thenReturn(prefix + annotation.annotationType().getSimpleName());
+			return (query, args) -> queryMock;
+		}
+
+	}
+
+	@Target({ FIELD, METHOD })
+	@Retention(RUNTIME)
+	@Converter
+	public @interface ConverterCustomRegistered {
+	}
+
+	@Target({ FIELD, METHOD })
+	@Retention(RUNTIME)
+	public @interface ConverterCustomWithoutMarkerRegistered {
+	}
+
+	@Target({ FIELD, METHOD })
+	@Retention(RUNTIME)
+	@Converter(ConverterFactory.class)
+	public @interface ConverterCustomWithStaticFactory {
+	}
+
+	@Target({ FIELD, METHOD })
+	@Retention(RUNTIME)
+	@Converter
+	public @interface ConverterCustomNotRegisteredError {
 	}
 }

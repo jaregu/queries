@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.dialect.Dialect;
+import com.jaregu.database.queries.proxy.QueryConverterFactory;
 import com.jaregu.database.queries.proxy.QueryMapperFactory;
 
 public interface QueriesConfig {
@@ -14,4 +15,6 @@ public interface QueriesConfig {
 	ParameterBinder getParameterBinder();
 
 	Map<Class<? extends Annotation>, QueryMapperFactory> getQueryMapperFactories();
+
+	Map<Class<? extends Annotation>, QueryConverterFactory> getQueryConverterFactories();
 }

@@ -12,5 +12,5 @@ public interface Mappers<T extends Mappers<?>> {
 	 * {@link Queries#proxy(Class)}.
 	 * <p>
 	 */
-	T factory(Class<? extends Annotation> annotatedWith, QueryMapperFactory factory);
+	T mapper(Class<? extends Annotation> annotatedWith, QueryMapperFactory factory);
 }

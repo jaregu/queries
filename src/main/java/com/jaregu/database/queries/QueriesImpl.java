@@ -65,7 +65,7 @@ public final class QueriesImpl implements Queries {
 	@Override
 	public <T> T proxy(Class<T> classOfInterface) {
 		InvocationHandler handler = new QueriesInvocationHandler(classOfInterface, this,
-				config.getQueryMapperFactories());
+				config.getQueryMapperFactories(), config.getQueryConverterFactories());
 
 		@SuppressWarnings("unchecked")
 		T proxy = (T) Proxy.newProxyInstance(classOfInterface.getClassLoader(), new Class<?>[] { classOfInterface },

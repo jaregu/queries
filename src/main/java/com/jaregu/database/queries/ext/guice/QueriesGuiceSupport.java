@@ -101,6 +101,9 @@ public class QueriesGuiceSupport {
 
 		@Inject(optional = true)
 		Set<QueriesSource> queriesSources = Collections.emptySet();
+		
+		@Inject(optional = true)
+		Set<QueriesSource> queriesMappers = Collections.emptySet();
 
 		QueriesSources getSources() {
 			return QueriesSources.of(queriesSources);

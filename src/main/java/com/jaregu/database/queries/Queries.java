@@ -23,10 +23,12 @@ import com.jaregu.database.queries.parsing.QueriesSources;
 import com.jaregu.database.queries.parsing.QueryParseException;
 import com.jaregu.database.queries.parsing.Sources;
 import com.jaregu.database.queries.proxy.ClassQueryMapper;
+import com.jaregu.database.queries.proxy.Converters;
 import com.jaregu.database.queries.proxy.Mappers;
 import com.jaregu.database.queries.proxy.QueriesSourceClass;
 import com.jaregu.database.queries.proxy.QueriesSourceId;
 import com.jaregu.database.queries.proxy.QueriesSourceResource;
+import com.jaregu.database.queries.proxy.QueryConverterFactory;
 import com.jaregu.database.queries.proxy.QueryMapperFactory;
 
 /**
@@ -150,14 +152,15 @@ public interface Queries extends QueriesFinder<QueryId> {
 	 * Queries builder class. Use builder to configure Queries instance.
 	 *
 	 */
-	public static class Builder
-			implements Sources<Builder>, Binders<Builder>, Dialects<Builder>, Caches<Builder>, Mappers<Builder> {
+	public static class Builder implements Sources<Builder>, Binders<Builder>, Dialects<Builder>, Caches<Builder>,
+			Mappers<Builder>, Converters<Builder> {
 
 		private List<QueriesSource> sources = new LinkedList<>();
 		private Optional<QueriesCache> cache = Optional.empty();
 		private Optional<Dialect> dialect = Optional.empty();
 		private Optional<ParameterBinder> parameterBinder = Optional.empty();
-		private Map<Class<? extends Annotation>, QueryMapperFactory> factories = new HashMap<>();
+		private Map<Class<? extends Annotation>, QueryMapperFactory> mappers = new HashMap<>();
+		private Map<Class<? extends Annotation>, QueryConverterFactory> converters = new HashMap<>();
 
 		Builder() {
 		}
@@ -187,8 +190,14 @@ public interface Queries extends QueriesFinder<QueryId> {
 		}
 
 		@Override
-		public Builder factory(Class<? extends Annotation> annotatedWith, QueryMapperFactory factory) {
-			this.factories.put(annotatedWith, factory);
+		public Builder mapper(Class<? extends Annotation> annotatedWith, QueryMapperFactory factory) {
+			this.mappers.put(annotatedWith, factory);
+			return this;
+		}
+
+		@Override
+		public Builder converter(Class<? extends Annotation> annotatedWith, QueryConverterFactory factory) {
+			this.converters.put(annotatedWith, factory);
 			return this;
 		}
 
@@ -197,10 +206,9 @@ public interface Queries extends QueriesFinder<QueryId> {
 				throw new QueryParseException("Can't build Queries, sources is empty");
 
 			QueriesConfig config = new QueriesConfigImpl(dialect.orElse(Dialects.defaultDialect()),
-					parameterBinder.orElse(Binders.defaultBinder()), factories);
+					parameterBinder.orElse(Binders.defaultBinder()), mappers, converters);
 			return new QueriesImpl(QueriesSources.of(sources), QueriesParser.create(), QueryCompiler.of(config),
 					cache.orElse(Caches.noCache()), config);
 		}
-
 	}
 }
