@@ -45,8 +45,7 @@ eclipse {
 dependencies {
 	compile 'org.slf4j:slf4j-api:1.7.+'
 	compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.9.+'
-	compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.9.+'
-
+	
 	//for caching extension
 	compileOnly "com.github.ben-manes.caffeine:caffeine:2.+"
 
