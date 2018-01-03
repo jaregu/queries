@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,8 +18,6 @@ import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.dialect.Dialect;
 import com.jaregu.database.queries.proxy.QueryConverterFactory;
 import com.jaregu.database.queries.proxy.QueryMapperFactory;
-
-import groovy.lang.DelegatesTo.Target;
 
 @RunWith(MockitoJUnitRunner.class)
 public class QueriesConfigImplTest {
