@@ -38,9 +38,14 @@ public class ExpressionParserImpl implements ExpressionParser {
 			Optional<Operand> operand = parseOperand(parts.get(0));
 			return operand.isPresent() && !(operand.get() instanceof OutputVariable);
 		} else {
+			Optional<Operand> operand;
+			if ((operand = parseOperand(parts.get(0))).isPresent() && operand.get() instanceof OutputVariable) {
+				return false;
+			}
+
 			Optional<Operand> lastOperand = Optional.empty();
 			for (SplitPart part : parts) {
-				Optional<Operand> operand;
+
 				if (part.isSequence()) {
 					operand = parseOperand(part);
 					if (!operand.isPresent()) {

@@ -25,12 +25,15 @@ class QueryCompilerImpl implements QueryCompiler, Compiler {
 		ExpressionParser expressionParser = ExpressionParser.defaultParser();
 		ParameterBinder parameterBinder = config.getParameterBinder();
 
-		List<QueryCompilerFeature> features = Arrays.asList(new IgnoredCommentFeature(),
+		List<QueryCompilerFeature> features = Arrays.asList(
+				new IgnoredCommentFeature(),
 				new BlockFeature(expressionParser),
 				new OptionalHyphenNamedParameterFeature(expressionParser, parameterBinder),
 				new OptionalSlashNamedParameterFeature(expressionParser, parameterBinder),
-				new NamedVariableFeature(parameterBinder), new AnonymousVariableFeature(parameterBinder),
-				new AssignmentFeature(expressionParser));
+				new NamedVariableFeature(parameterBinder),
+				new AnonymousVariableFeature(parameterBinder),
+				new AssignmentFeature(expressionParser),
+				new EntityFieldsFeature(expressionParser));
 
 		return new QueryCompilerImpl(features, config.getDialect());
 	}
