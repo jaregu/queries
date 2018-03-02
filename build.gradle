@@ -15,7 +15,7 @@ repositories {
 sourceCompatibility = 1.8
 version = '0.9'
 
-task wrapper(type: Wrapper) { gradleVersion = '3.5' }
+task wrapper(type: Wrapper) { gradleVersion = '4.4.1' }
 
 eclipseJdt.doLast {
 	File f = file('.settings/org.eclipse.core.resources.prefs')
@@ -46,15 +46,18 @@ dependencies {
 	compile 'org.slf4j:slf4j-api:1.7.+'
 	compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.9.+'
 	
-	//for caching extension
+	// for caching extension
 	compileOnly "com.github.ben-manes.caffeine:caffeine:2.+"
 
-	//for metrics extension
+	// for metrics extension
 	compileOnly  'io.dropwizard.metrics:metrics-core:3.+'
 
-	//for guice extension
+	// for guice extension
 	compileOnly "com.google.inject:guice:4.1.0"
 	compileOnly "com.google.inject.extensions:guice-multibindings:4.1.0"
+	
+	// for JPA insert/update/delete extension
+	compileOnly  group: 'org.eclipse.persistence', name: 'javax.persistence', version: '2.2.0'
 
 	testCompile 'org.mockito:mockito-core:+'
 	testCompile 'junit:junit:+'
