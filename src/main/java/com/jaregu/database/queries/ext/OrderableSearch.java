@@ -2,6 +2,7 @@ package com.jaregu.database.queries.ext;
 
 import static com.jaregu.database.queries.ext.OrderBy.empty;
 
+import java.util.Collections;
 import java.util.List;
 
 import com.jaregu.database.queries.dialect.Orderable;
@@ -18,7 +19,7 @@ public interface OrderableSearch extends Orderable {
 
 	@Override
 	default List<String> getOrderByItems() {
-		return getOrderBy().getOrderByItems();
+		return getOrderBy() != null ? getOrderBy().getOrderByItems() : Collections.emptyList();
 	}
 
 	default void clearSortProperties() {
