@@ -171,7 +171,7 @@ public final class QueriesInvocationHandler implements InvocationHandler {
 								+ " must have exactly one parameter and it must implement SortableSearch");
 
 			converters.add((query, args) -> {
-				return query.toOrderedQuery((OrderableSearch) args[0]);
+				return query.toOrderedQuery((OrderableSearch<?>) args[0]);
 			});
 		}
 		if (queryRef.toPaged()) {
@@ -181,7 +181,7 @@ public final class QueriesInvocationHandler implements InvocationHandler {
 						+ " method " + method.getName()
 						+ " must have exactly one parameter and it must implement PageableSearch");
 			converters.add((query, args) -> {
-				return query.toPagedQuery((PageableSearch) args[0]);
+				return query.toPagedQuery((PageableSearch<?>) args[0]);
 			});
 		}
 		if (queryRef.toCount()) {

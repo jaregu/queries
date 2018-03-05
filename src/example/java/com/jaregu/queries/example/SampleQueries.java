@@ -21,10 +21,7 @@ import com.jaregu.database.queries.RelativeQueries;
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.building.QueryBuildException;
 import com.jaregu.database.queries.compiling.PreparedQuery;
-import com.jaregu.database.queries.ext.OffsetLimit;
-import com.jaregu.database.queries.ext.PageableSearch;
-import com.jaregu.database.queries.ext.OrderBy;
-import com.jaregu.database.queries.ext.OrderableSearch;
+import com.jaregu.database.queries.ext.AbstractSearch;
 import com.jaregu.database.queries.parsing.QueriesSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -59,6 +56,7 @@ public class SampleQueries {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private Database createLocalMariaDb() {
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl(
@@ -71,6 +69,7 @@ public class SampleQueries {
 		return mariaDb;
 	}
 
+	@SuppressWarnings("unused")
 	private Database createLocalOracleDb() {
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl("jdbc:oracle:thin:@localhost:1521:XE");
@@ -230,9 +229,7 @@ public class SampleQueries {
 	@Test
 	public void searchExample() {
 		PreparedQuery searchQuery = rq.get("search-example");
-		DummySearch search = new DummySearch();
-		search.setOffset(0);
-		search.setLimit(10);
+		DummySearch search = new DummySearch(0, 10, Collections.emptyList());
 		Query noCriterionsQuery = searchQuery.build(search);
 		assertThat(noCriterionsQuery.getSql()).doesNotContain("like").doesNotContain("LOWER");
 		// parameter contains only offset and limit
@@ -390,14 +387,20 @@ public class SampleQueries {
 		}
 	}
 
-	public static class DummySearch implements PageableSearch, OrderableSearch {
+	public static class DummySearch extends AbstractSearch<DummySearch> {
+
+		public DummySearch() {
+			this(null, null, null);
+		}
+
+		public DummySearch(Integer offset, Integer limit, List<String> orderByItems) {
+			super(offset, limit, orderByItems);
+		}
 
 		private Integer foo;
 		private String barEq;
 		private String barStarts;
 		private String barContains;
-		private OffsetLimit offsetLimit = OffsetLimit.empty();
-		private OrderBy sortProperties = OrderBy.empty();
 
 		public String getBarEq() {
 			return barEq;
@@ -429,26 +432,6 @@ public class SampleQueries {
 
 		public void setFoo(Integer foo) {
 			this.foo = foo;
-		}
-
-		@Override
-		public OrderBy getOrderBy() {
-			return sortProperties;
-		}
-
-		@Override
-		public void setOrderBy(OrderBy properties) {
-			this.sortProperties = properties;
-		}
-
-		@Override
-		public OffsetLimit getOffsetLimit() {
-			return offsetLimit;
-		}
-
-		@Override
-		public void setOffsetLimit(OffsetLimit offsetLimit) {
-			this.offsetLimit = offsetLimit;
 		}
 	}
 }

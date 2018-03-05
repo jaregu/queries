@@ -12,7 +12,7 @@ public class DefaultDialectImpl implements Dialect {
 	@Override
 	public Query toOrderedQuery(Query query, Orderable orderable) {
 		List<String> items;
-		if (orderable != null && (items = orderable.getOrderByItems()) != null && !items.isEmpty()) {
+		if (orderable != null && (items = orderable.getOrderBy()) != null && !items.isEmpty()) {
 
 			StringBuilder newSql = new StringBuilder("SELECT x.* FROM /* ORDER BY wrapper by default dialect */ (\n")
 					.append(query.getSql()).append("\n) x ORDER BY ");

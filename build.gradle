@@ -67,7 +67,7 @@ dependencies {
 
 	//logging
 	example "ch.qos.logback:logback-classic:1.2.+"
-	example "org.codehaus.groovy:groovy-all:2.4.+"
+	example "org.codehaus.groovy:groovy-all:2.4.13"
 
 	//db
 	example "org.hsqldb:hsqldb:2.4.+"

@@ -22,9 +22,9 @@ public class ToOrderedQueryTest {
 	private void testByStrings(String... values) {
 		ToOrderedQuery toOrdered = createInstance(o -> {
 			if (values == null) {
-				assertThat(o.getOrderByItems()).isEmpty();
+				assertThat(o.getOrderBy()).isEmpty();
 			} else {
-				assertThat(o.getOrderByItems()).containsExactly(values);
+				assertThat(o.getOrderBy()).containsExactly(values);
 			}
 		});
 		toOrdered.toOrderedQuery(values);
@@ -41,9 +41,9 @@ public class ToOrderedQueryTest {
 	private void testByIterable(String... values) {
 		ToOrderedQuery toOrdered = createInstance(o -> {
 			if (values == null) {
-				assertThat(o.getOrderByItems()).isEmpty();
+				assertThat(o.getOrderBy()).isEmpty();
 			} else {
-				assertThat(o.getOrderByItems()).containsExactly(values);
+				assertThat(o.getOrderBy()).containsExactly(values);
 			}
 		});
 		if (values == null) {

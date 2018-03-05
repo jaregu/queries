@@ -4,5 +4,5 @@ import java.util.List;
 
 public interface Orderable {
 
-	List<String> getOrderByItems();
+	List<String> getOrderBy();
 }

@@ -1,46 +1,28 @@
 package com.jaregu.database.queries.ext;
 
-import static com.jaregu.database.queries.ext.OffsetLimit.empty;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jaregu.database.queries.dialect.Pageable;
 
-public interface PageableSearch extends Pageable {
+public interface PageableSearch<T extends PageableSearch<T>> extends Pageable {
 
-	@JsonIgnore
-	OffsetLimit getOffsetLimit();
+	T withOffset(Integer offset);
 
-	void setOffsetLimit(OffsetLimit offsetLimit);
+	T withLimit(Integer limit);
 
-	@Override
-	default Integer getOffset() {
-		OffsetLimit offsetLimit = getOffsetLimit();
-		return offsetLimit != null ? offsetLimit.getOffset() : null;
+	default T nextPage() {
+		if (getLimit() != null && getOffset() != null) {
+			return withOffset(getOffset() + getLimit());
+		}
+		throw new IllegalStateException("Limit or offset is null, can't go to next page!");
 	}
 
-	default void setOffset(Integer offset) {
-		setOffsetLimit((getOffsetLimit() != null ? getOffsetLimit() : empty()).offset(offset));
-	}
-
-	@Override
-	default Integer getLimit() {
-		OffsetLimit offsetLimit = getOffsetLimit();
-		return offsetLimit != null ? offsetLimit.getLimit() : null;
-	}
-
-	default void setLimit(Integer limit) {
-		setOffsetLimit((getOffsetLimit() != null ? getOffsetLimit() : empty()).limit(limit));
-	}
-
-	default void nextPage() {
-		OffsetLimit offsetLimit = getOffsetLimit();
-		if (offsetLimit != null)
-			setOffsetLimit(offsetLimit.nextPage());
-	}
-
-	default void nextPageFull(int rowCount) {
-		OffsetLimit offsetLimit = getOffsetLimit();
-		if (offsetLimit != null)
-			setOffsetLimit(offsetLimit.nextPageFull(rowCount));
+	default T nextPageFull(int rowCount) {
+		if (getLimit() != null && getOffset() != null) {
+			if (getOffset() + getLimit() + getLimit() > rowCount) {
+				return withOffset(rowCount > getLimit() ? rowCount - getLimit() : 0);
+			} else {
+				return nextPage();
+			}
+		}
+		throw new IllegalStateException("Limit or offset is null, can't go to next page!");
 	}
 }

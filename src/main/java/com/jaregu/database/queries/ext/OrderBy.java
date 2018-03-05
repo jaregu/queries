@@ -1,105 +1,58 @@
 package com.jaregu.database.queries.ext;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.AbstractList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.jaregu.database.queries.dialect.Orderable;
+public final class OrderBy {
 
-public final class OrderBy implements Iterable<OrderByProperty>, Orderable, Serializable {
-
-	private static final long serialVersionUID = 9139131057961457410L;
-
-	private static final OrderBy EMPTY = new OrderBy(Collections.emptyList());
-
-	private final List<OrderByProperty> properties;
-
-	OrderBy(List<OrderByProperty> properties) {
-		this.properties = properties;
+	public static OrderByList empty() {
+		return new OrderByList(Collections.emptyList());
 	}
 
-	@Override
-	public Iterator<OrderByProperty> iterator() {
-		return properties.iterator();
+	public static OrderByList of(List<String> orderByItems) {
+		return new OrderByList(orderByItems);
 	}
 
-	@JsonIgnore
-	public boolean isEmpty() {
-		return properties.isEmpty();
+	public static OrderByList asc(String property) {
+		return new OrderByList(Collections.singletonList(property));
 	}
 
-	public OrderBy add(OrderByProperty property) {
-		return new OrderBy(Stream.concat(properties.stream(), Stream.of(property)).collect(Collectors.toList()));
+	public static OrderByList desc(String property) {
+		return new OrderByList(Collections.singletonList(property));
 	}
 
-	public OrderBy add(String field) {
-		return add(OrderByProperty.of(field));
-	}
+	public static class OrderByList extends AbstractList<String> implements List<String> {
 
-	public OrderBy addAsc(String field) {
-		return add(OrderByProperty.asc(field));
-	}
+		private List<String> orderByItems;
 
-	public OrderBy addDesc(String field) {
-		return add(OrderByProperty.desc(field));
-	}
-
-	@Override
-	public List<String> getOrderByItems() {
-		return properties.stream().map(OrderByProperty::toSql)
-				.collect(Collectors.toCollection(() -> new ArrayList<String>(properties.size())));
-	}
-
-	@Override
-	public String toString() {
-		return "SortBy" + properties;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == this)
-			return true;
-
-		if (obj instanceof OrderBy) {
-			OrderBy other = (OrderBy) obj;
-			return Objects.equals(properties, other.properties);
+		public OrderByList(List<String> orderByItems) {
+			this.orderByItems = Collections.unmodifiableList(orderByItems);
 		}
 
-		return false;
-	}
+		public OrderByList asc(String property) {
+			return with(property);
+		}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(properties);
-	}
+		public OrderByList desc(String property) {
+			return with(property + " " + SortOrder.DESC);
+		}
 
-	public static OrderBy empty() {
-		return EMPTY;
-	}
+		private OrderByList with(String property) {
+			return new OrderByList(
+					Stream.concat(orderByItems.stream(), Stream.of(property)).collect(Collectors.toList()));
+		}
 
-	public static OrderBy of(OrderByProperty property) {
-		return EMPTY.add(property);
-	}
+		@Override
+		public String get(int index) {
+			return orderByItems.get(index);
+		}
 
-	public static OrderBy asc(String property) {
-		return EMPTY.addAsc(property);
-	}
-
-	public static OrderBy desc(String property) {
-		return EMPTY.addDesc(property);
-	}
-
-	@JsonCreator
-	public static OrderBy of(@JsonProperty Collection<OrderByProperty> properties) {
-		return new OrderBy(new ArrayList<>(properties));
+		@Override
+		public int size() {
+			return orderByItems.size();
+		}
 	}
 }

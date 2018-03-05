@@ -2,7 +2,6 @@ package com.jaregu.database.queries.building;
 
 import com.jaregu.database.queries.dialect.Dialect;
 import com.jaregu.database.queries.dialect.Pageable;
-import com.jaregu.database.queries.ext.OffsetLimit;
 
 public interface ToPagedQuery {
 
@@ -25,6 +24,17 @@ public interface ToPagedQuery {
 	 * @return
 	 */
 	default Query toPagedQuery(Integer offset, Integer limit) {
-		return toPagedQuery(OffsetLimit.of(offset, limit));
+		return toPagedQuery(new Pageable() {
+
+			@Override
+			public Integer getOffset() {
+				return offset;
+			}
+
+			@Override
+			public Integer getLimit() {
+				return limit;
+			}
+		});
 	}
 }
