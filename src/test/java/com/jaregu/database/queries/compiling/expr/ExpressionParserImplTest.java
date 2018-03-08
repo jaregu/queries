@@ -64,6 +64,8 @@ public class ExpressionParserImplTest {
 		isLike(" (1)  + (2 + (1 + 2 + 3) + (1 +4 + (6 + 7))) *  (3)   ");
 		isLike("()()(())((()())())");
 		isNotLike("1 + b c + 2");
+
+		isNotLike(" aaa(cc = 'aaa') ");
 		isNotLike(" { ");
 		isNotLike(" :aa { ");
 		isNotLike(" :a + 1 { ");
