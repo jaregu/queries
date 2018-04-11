@@ -47,7 +47,7 @@ public class DefaultDialectImpl implements Dialect {
 	@Override
 	public Query toCountQuery(Query query) {
 		StringBuilder newSql = new StringBuilder(
-				"SELECT COUNT(1) as 'row_count' FROM /* COUNT wrapper by default dialect */ (\n").append(query.getSql())
+				"SELECT COUNT(1) as row_count FROM /* COUNT wrapper by default dialect */ (\n").append(query.getSql())
 						.append("\n) x");
 		return new QueryImpl(newSql.toString(), query.getParameters(), query.getAttributes(), this);
 	}
