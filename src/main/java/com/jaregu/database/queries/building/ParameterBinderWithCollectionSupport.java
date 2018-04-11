@@ -298,7 +298,6 @@ public class ParameterBinderWithCollectionSupport extends ParameterBinderDefault
 
 		@Override
 		public String toString() {
-			// TODO Auto-generated method stub
 			return "ParameterBinderWithCollectionSupport.Result{" + places + "}" + values + "";
 		}
 	}
