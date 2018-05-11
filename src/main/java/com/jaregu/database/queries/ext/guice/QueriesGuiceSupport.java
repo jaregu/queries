@@ -1,6 +1,5 @@
 package com.jaregu.database.queries.ext.guice;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -10,8 +9,9 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
+import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.jaregu.database.queries.Queries;
 import com.jaregu.database.queries.parsing.QueriesSource;
@@ -27,10 +27,15 @@ public class QueriesGuiceSupport {
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
+				// MME called at least one time for guice to create empty list if no source is supplied
+				Multibinder.newSetBinder(binder(), QueriesSource.class);
 
-				com.google.inject.Provider<SourcesCollector> provider = binder().getProvider(SourcesCollector.class);
+				//Set<QueriesSource> queriesSources
+				TypeLiteral<Set<QueriesSource>> sourcesType = new TypeLiteral<Set<QueriesSource>>() {
+				};
+				Provider<Set<QueriesSource>> sourcesProvider = getProvider(Key.get(sourcesType));
 
-				bind(Queries.class).toProvider(() -> queriesSupplier.apply(provider.get().getSources()))
+				bind(Queries.class).toProvider(() -> queriesSupplier.apply(QueriesSources.of(sourcesProvider.get())))
 						.in(Singleton.class);
 			}
 		};
@@ -93,20 +98,6 @@ public class QueriesGuiceSupport {
 					}
 				}
 			};
-		}
-	}
-
-	@Singleton
-	static class SourcesCollector {
-
-		@Inject(optional = true)
-		Set<QueriesSource> queriesSources = Collections.emptySet();
-		
-		@Inject(optional = true)
-		Set<QueriesSource> queriesMappers = Collections.emptySet();
-
-		QueriesSources getSources() {
-			return QueriesSources.of(queriesSources);
 		}
 	}
 
