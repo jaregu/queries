@@ -7,8 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.Column;
-
+import com.jaregu.database.queries.annotation.Column;
 import com.jaregu.database.queries.compiling.EntityFieldsFeature.ColumnField;
 
 public class EntityFieldsBuilder {
