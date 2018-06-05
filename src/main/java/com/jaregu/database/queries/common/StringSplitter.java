@@ -24,9 +24,9 @@ public class StringSplitter {
 	public List<String> split(String text) {
 		int offset = 0;
 		int next = 0;
-		final char ch = '\n';
+
 		List<String> lines = new ArrayList<>();
-		while ((next = text.indexOf(ch, offset)) != -1) {
+		while ((next = text.indexOf(separator, offset)) != -1) {
 			lines.add(text.substring(offset, include ? next + 1 : next));
 			offset = next + 1;
 		}
