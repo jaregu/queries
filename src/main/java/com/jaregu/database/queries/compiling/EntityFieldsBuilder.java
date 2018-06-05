@@ -1,5 +1,6 @@
 package com.jaregu.database.queries.compiling;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,7 @@ public class EntityFieldsBuilder {
 	}
 
 	public List<ColumnField> build() {
+		String columnAliasPrefix = alias.map(a -> a + ".").orElse("");
 		List<ColumnField> namesFromMethods = Stream.of(entityClass.getDeclaredMethods())
 				.filter(method -> method.isAnnotationPresent(Column.class))
 				.filter(method -> method.getName().startsWith("get")
@@ -30,36 +32,46 @@ public class EntityFieldsBuilder {
 						|| method.getName().startsWith("set"))
 				.map(method -> {
 					Column columnAnnotation = method.getAnnotation(Column.class);
-					String field;
-					if (method.getName().startsWith("get")
-							|| method.getName().startsWith("set")) {
-						field = method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4);
-					} else {
-						field = method.getName().substring(2, 3).toLowerCase() + method.getName().substring(3);
-					}
-					String column = alias.map(a -> a + ".").orElse("")
-							+ (columnAnnotation.name().length() == 0 ? field : columnAnnotation.name());
-					return new ColumnFieldImpl(column, field);
+					String field = getFieldNameFromMethodName(method);
+					String columnName = getColumnName(columnAnnotation, field);
+					String column = columnAliasPrefix + columnName;
+
+					return excludedColumns.contains(columnName) ? null : new ColumnFieldImpl(column, field);
 				})
-				.filter(cf -> !excludedColumns.contains(cf.getColumn()))
+				.filter(cf -> cf != null)
 				.collect(Collectors.toList());
 
 		List<ColumnField> namesFromFields = Stream.of(entityClass.getDeclaredFields())
 				.filter(f -> f.isAnnotationPresent(Column.class))
 				.map(f -> {
 					Column columnAnnotation = f.getAnnotation(Column.class);
-					String column = alias.map(a -> a + ".").orElse("")
-							+ (columnAnnotation.name().length() == 0 ? f.getName() : columnAnnotation.name());
+					String columnName = getColumnName(columnAnnotation, f.getName());
+					String column = columnAliasPrefix + columnName;
 					String field = f.getName();
-					return new ColumnFieldImpl(column, field);
+					return excludedColumns.contains(columnName) ? null : new ColumnFieldImpl(column, field);
 				})
-				.filter(cf -> !excludedColumns.contains(cf.getColumn()))
+				.filter(cf -> cf != null)
 				.collect(Collectors.toList());
 
 		List<ColumnField> combined = new ArrayList<>(namesFromMethods.size() + namesFromFields.size());
-		combined.addAll(namesFromMethods);
 		combined.addAll(namesFromFields);
+		combined.addAll(namesFromMethods);
 		return combined;
+	}
+
+	private String getColumnName(Column columnAnnotation, String field) {
+		return columnAnnotation.name().length() == 0 ? field : columnAnnotation.name();
+	}
+
+	private String getFieldNameFromMethodName(Method method) {
+		String field;
+		if (method.getName().startsWith("get")
+				|| method.getName().startsWith("set")) {
+			field = method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4);
+		} else {
+			field = method.getName().substring(2, 3).toLowerCase() + method.getName().substring(3);
+		}
+		return field;
 	}
 
 	private static class ColumnFieldImpl implements ColumnField {
@@ -74,7 +86,7 @@ public class EntityFieldsBuilder {
 
 		@Override
 		public String toString() {
-			return "ColumnField[column=" + column + ", field= " + field + "]";
+			return "ColumnField[column=" + column + ", field=" + field + "]";
 		}
 
 		@Override
