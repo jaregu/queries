@@ -1,5 +1,7 @@
 # Jaregu-queries
 
+[![Build Status](https://travis-ci.org/jaregu/queries.svg?branch=master)](https://travis-ci.org/jaregu/queries)
+
 Java based SQL templating project. Store your queries in sql files and build queries for executing.
 Main features:
 - SQL templating with conditional blocks
