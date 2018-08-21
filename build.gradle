@@ -8,14 +8,17 @@ repositories {
 	maven { url "https://maven.atlassian.com/3rdparty/" }
 }
 
+buildScan {
+	licenseAgreementUrl = "https://gradle.com/terms-of-service"
+	licenseAgree = "yes"
+}
+
 [
 	compileJava,
 	compileTestJava
 ]*.options*.encoding = 'UTF-8'
 sourceCompatibility = 1.8
 version = '0.9'
-
-task wrapper(type: Wrapper) { gradleVersion = '4.4.1' }
 
 eclipseJdt.doLast {
 	File f = file('.settings/org.eclipse.core.resources.prefs')
