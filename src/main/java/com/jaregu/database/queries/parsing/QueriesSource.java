@@ -70,9 +70,9 @@ public interface QueriesSource {
 	 * 
 	 * <p>
 	 * Resulting queries source ID will be path name where path separator
-	 * replaced with dot name. See {@link SourceId#ofPath(String)}.
+	 * replaced with dot name. See {@link SourceId#ofResource(String)}.
 	 * 
-	 * @param resourcePath
+	 * @param path
 	 * @return
 	 */
 	public static QueriesSource ofResource(String path) {

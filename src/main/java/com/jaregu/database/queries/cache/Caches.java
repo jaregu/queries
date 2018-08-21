@@ -5,7 +5,7 @@ public interface Caches<T extends Caches<?>> {
 	/**
 	 * Sets cache implementation
 	 * 
-	 * @param sources
+	 * @param cache
 	 * @return
 	 */
 	public T cache(QueriesCache cache);

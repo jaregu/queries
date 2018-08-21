@@ -79,7 +79,7 @@ public enum CommentType {
 	 * Wraps text with this comment style char sequences, and creates valid SQL
 	 * comment
 	 * 
-	 * @param comment
+	 * @param text
 	 * @return
 	 * @throws QueryParseException
 	 */

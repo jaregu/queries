@@ -21,7 +21,7 @@ public interface Dialects<T extends Dialects<?>> {
 	 * additions like <code>LIMIT ? OFFSET ?</code> clause
 	 * 
 	 * See {@link Query} class <code>to...()</code> methods for all available
-	 * conversions like {@link Query#toPagedQuery(int, int)}.
+	 * conversions like {@link Query#toPagedQuery(Integer, Integer)}.
 	 * 
 	 * @param dialect
 	 * @return

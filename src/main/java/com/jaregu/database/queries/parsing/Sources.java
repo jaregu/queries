@@ -24,7 +24,7 @@ public interface Sources<T extends Sources<?>> {
 	/**
 	 * Adds SQL statements source
 	 * 
-	 * @param sources
+	 * @param source
 	 * @return
 	 */
 	default T source(QueriesSource source) {
@@ -55,7 +55,7 @@ public interface Sources<T extends Sources<?>> {
 	 * Adds SQL statements source, shorthand for adding SQL statements source
 	 * based on class, see {@link QueriesSource#ofClass(Class)}
 	 * 
-	 * @param sources
+	 * @param clazz
 	 * @return
 	 */
 	default T sourceOfClass(Class<?> clazz) {
@@ -66,7 +66,7 @@ public interface Sources<T extends Sources<?>> {
 	 * Adds SQL statements source, shorthand for adding SQL statements source
 	 * based on resource, see {@link QueriesSource#ofResource(String)}
 	 * 
-	 * @param sources
+	 * @param resourcePath
 	 * @return
 	 */
 	default T sourceOfResource(String resourcePath) {

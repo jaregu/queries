@@ -22,7 +22,7 @@ public @interface QueryRef {
 	String value();
 
 	/**
-	 * Perform {@link Query#toPagedQuery(com.jaregu.database.queries.ext.PageableSearch)}
+	 * Perform {@link Query#toPagedQuery(com.jaregu.database.queries.dialect.Pageable)}
 	 * @return
 	 */
 	boolean toPaged() default false;

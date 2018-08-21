@@ -37,11 +37,6 @@ import java.util.stream.Collectors;
  * 
  * Use static {@link #builder()} for creating binder instances.
  * 
- * @param templateSizes
- *            -
- * @param restParamType
- *            - what value to use for empty parameters
- * @return
  */
 public class ParameterBinderWithCollectionSupport extends ParameterBinderDefaultImpl {
 

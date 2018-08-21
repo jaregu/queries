@@ -75,7 +75,7 @@ public interface Queries extends QueriesFinder<QueryId> {
 	/**
 	 * Returns cached {@link PreparedQuery} (see {@link QueriesCache}) or
 	 * prepare one using supplied SQL sources. Shorthand for
-	 * {@link Queries#get(QueryId)} with {@link QueryId#of(String)}
+	 * Queries.get(QueryId) with {@link QueryId#of(String)}
 	 * 
 	 */
 	PreparedQuery get(String queryId);
@@ -96,7 +96,7 @@ public interface Queries extends QueriesFinder<QueryId> {
 	 * {@link Query} mapping to something else. ClassQueryMapper expects class
 	 * to be instantiable class with accessible zero argument constructor or use
 	 * custom annotations for more powerful conversions. Use
-	 * {@link Builder#factory(Class, QueryMapperFactory)} builder method to
+	 * {@link Builder#converter(Class, QueryConverterFactory)} builder method to
 	 * register custom factories.
 	 * 
 	 * @param classOfInterface

@@ -40,7 +40,7 @@ public interface Dialect {
 	 * {@link Orderable} items
 	 * 
 	 * @param query
-	 * @param sortProperties
+	 * @param orderable
 	 * @return new {@link Query} with <code>ORDER BY</code> clause added
 	 */
 	Query toOrderedQuery(Query query, Orderable orderable);

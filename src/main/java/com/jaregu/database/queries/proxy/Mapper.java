@@ -11,7 +11,7 @@ import com.jaregu.database.queries.Queries;
 /**
  * Query mapping annotation marker annotation. Supply {@link QueryMapperFactory}
  * class (must have accessible zero argument constructor) or use
- * {@link Queries.Builder#factory(Class, QueryMapperFactory)} method to register
+ * {@link Queries.Builder#converter(Class, QueryConverterFactory)} method to register
  * factory instances mapped to used annotation
  * <p>
  *

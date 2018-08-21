@@ -9,7 +9,7 @@ public interface ToPagedQuery {
 	 * Returns new query which has added <code>LIMIT, OFFSET</code>
 	 * functionality using configured ({@link Dialect}) implementation
 	 * 
-	 * See {@link Dialect#toPagedQuery(Query, OffsetLimit)}
+	 * See {@link Dialect#toPagedQuery(Query, Pageable)}
 	 * 
 	 * @return
 	 */
@@ -19,7 +19,7 @@ public interface ToPagedQuery {
 	 * Returns new query which has added <code>LIMIT, OFFSET</code>
 	 * functionality using configured ({@link Dialect}) implementation
 	 * 
-	 * See {@link Dialect#toPagedQuery(Query, OffsetLimit)}
+	 * See {@link Dialect#toPagedQuery(Query, Pageable)}
 	 * 
 	 * @return
 	 */

@@ -29,7 +29,7 @@ public interface Binders<T extends Binders<?>> {
 	 * SELECT * FROM dummy WHERE id IN (?,?,?)
 	 * </pre>
 	 * 
-	 * By default will use {@link #binderDefault()}, for more options see
+	 * By default will use {@link #defaultBinder()}, for more options see
 	 * {@link ParameterBinderWithCollectionSupport} or use one of shorthand
 	 * methods: {@link #binderForCollectionsAndLastValueNull(List)} or
 	 * {@link #binderForCollectionsAndLastValueRepeated(List)}
