@@ -43,6 +43,8 @@ public class ExpressionParserImplTest {
 		when(resolver.getValue("bT")).thenReturn(true);
 		when(resolver.getValue("bF")).thenReturn(false);
 		when(resolver.getValue("nil")).thenReturn(null);
+		when(resolver.getValue("enum_xxx")).thenReturn(TEST_ENUM.XXX);
+		when(resolver.getValue("enum_yyy")).thenReturn(TEST_ENUM.YYY);
 	}
 
 	@Test
@@ -121,6 +123,24 @@ public class ExpressionParserImplTest {
 		eval(false, "true != true");
 		eval(false, "true == false");
 		eval(true, "true != false");
+	}
+
+	@Test
+	public void testEnumEquality() {
+		eval(true, "'XXX' == :enum_xxx");
+		eval(true, "'YYY' == :enum_yyy");
+		eval(true, "'YYY' != :enum_xxx");
+		eval(false, "'XXX' == :enum_yyy");
+		eval(false, "'YYY' != :enum_yyy");
+		eval(true, ":enum_xxx == 'XXX'");
+		eval(true, " :enum_yyy == 'YYY'");
+		eval(true, ":enum_xxx  != 'YYY' ");
+		eval(false, ":enum_yyy == 'XXX'");
+		eval(false, ":enum_yyy != 'YYY' ");
+	}
+
+	enum TEST_ENUM {
+		XXX, YYY
 	}
 
 	@Test
