@@ -5,12 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -35,7 +36,8 @@ public class EntityFieldsFeatureTest {
 	@Mock
 	private ParametersResolver resolver;
 
-	@InjectMocks
+	private Map<String, Class<?>> entities;
+
 	private EntityFieldsFeature feature;
 
 	@Before
@@ -48,6 +50,10 @@ public class EntityFieldsFeatureTest {
 					.collect(Collectors.toList());
 			return result;
 		});
+
+		entities = new HashMap<>();
+
+		feature = new EntityFieldsFeature(expressionParser, entities);
 	}
 
 	@Test(expected = QueryCompileException.class)
@@ -122,6 +128,28 @@ public class EntityFieldsFeatureTest {
 		PreparedQueryPart.Result build = compilePart(part);
 
 		assertThat(build.getSql().get()).isEqualToNormalizingWhitespace("x.second_col = :second, x.third_col = :third");
+	}
+
+	@Test
+	public void testEntityAliasSimpleClassName() {
+		entities.put(SomeTable.class.getSimpleName(), SomeTable.class);
+		ParsedQueryPart part = ParsedQueryPart.create("/* entityFieldGenerator(template = 'column' "
+				+ "entityClass = 'SomeTable' excludeColumns = 'first, fourth_col') */");
+
+		PreparedQueryPart.Result build = compilePart(part);
+
+		assertThat(build.getSql().get()).isEqualToNormalizingWhitespace("second_col, third_col");
+	}
+
+	@Test
+	public void testEntitysAliasSomeString() {
+		entities.put("AaA", SomeTable.class);
+		ParsedQueryPart part = ParsedQueryPart.create("/* entityFieldGenerator(template = 'column' "
+				+ "entityClass = 'AaA' excludeColumns = 'first, fourth_col') */");
+
+		PreparedQueryPart.Result build = compilePart(part);
+
+		assertThat(build.getSql().get()).isEqualToNormalizingWhitespace("second_col, third_col");
 	}
 
 	private PreparedQueryPart.Result compilePart(ParsedQueryPart part) {

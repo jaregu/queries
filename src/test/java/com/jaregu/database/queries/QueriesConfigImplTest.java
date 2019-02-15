@@ -46,6 +46,12 @@ public class QueriesConfigImplTest {
 
 	private Map<Class<? extends Annotation>, QueryConverterFactory> converters;
 
+	private Class<String> entity1Class = String.class;
+
+	private Class<Number> entity2Class = Number.class;
+
+	private Map<String, Class<?>> entities;
+
 	@Before
 	public void setUp() {
 		mappers = new HashMap<>();
@@ -56,7 +62,11 @@ public class QueriesConfigImplTest {
 		converters.put(Retention.class, converter1);
 		converters.put(Target.class, converter2);
 
-		config = new QueriesConfigImpl(dialect, binder, mappers, converters);
+		entities = new HashMap<>();
+		entities.put("aaa", entity1Class);
+		entities.put("bbb", entity2Class);
+
+		config = new QueriesConfigImpl(dialect, binder, mappers, converters, entities);
 	}
 
 	@Test
@@ -71,5 +81,6 @@ public class QueriesConfigImplTest {
 				.containsOnly(mapper1, mapper2);
 		assertThat(config.getQueryMapperFactories()).containsAllEntriesOf(mappers);
 		assertThat(config.getQueryConverterFactories()).containsAllEntriesOf(converters);
+		assertThat(config.getEntities()).containsAllEntriesOf(entities);
 	}
 }

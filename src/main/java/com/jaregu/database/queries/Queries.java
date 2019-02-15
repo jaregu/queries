@@ -13,6 +13,7 @@ import com.jaregu.database.queries.building.ParameterBinder;
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.cache.Caches;
 import com.jaregu.database.queries.cache.QueriesCache;
+import com.jaregu.database.queries.compiling.Entities;
 import com.jaregu.database.queries.compiling.PreparedQuery;
 import com.jaregu.database.queries.compiling.QueryCompiler;
 import com.jaregu.database.queries.dialect.Dialect;
@@ -153,7 +154,7 @@ public interface Queries extends QueriesFinder<QueryId> {
 	 *
 	 */
 	public static class Builder implements Sources<Builder>, Binders<Builder>, Dialects<Builder>, Caches<Builder>,
-			Mappers<Builder>, Converters<Builder> {
+			Mappers<Builder>, Converters<Builder>, Entities<Builder> {
 
 		private List<QueriesSource> sources = new LinkedList<>();
 		private Optional<QueriesCache> cache = Optional.empty();
@@ -161,6 +162,7 @@ public interface Queries extends QueriesFinder<QueryId> {
 		private Optional<ParameterBinder> parameterBinder = Optional.empty();
 		private Map<Class<? extends Annotation>, QueryMapperFactory> mappers = new HashMap<>();
 		private Map<Class<? extends Annotation>, QueryConverterFactory> converters = new HashMap<>();
+		private Map<String, Class<?>> entities = new HashMap<>();
 
 		Builder() {
 		}
@@ -201,14 +203,29 @@ public interface Queries extends QueriesFinder<QueryId> {
 			return this;
 		}
 
+		@Override
+		public Builder entity(Class<?> entity) {
+			return this.entity(entity, entity.getSimpleName());
+		}
+
+		@Override
+		public Builder entity(Class<?> entity, String alias) {
+			if (entities.containsKey(alias)) {
+				throw new IllegalArgumentException("Entity by alias '" + alias + "' is already added!");
+			}
+			entities.put(alias, entity);
+			return this;
+		}
+
 		public Queries build() {
 			if (sources.isEmpty())
 				throw new QueryParseException("Can't build Queries, sources is empty");
 
 			QueriesConfig config = new QueriesConfigImpl(dialect.orElse(Dialects.defaultDialect()),
-					parameterBinder.orElse(Binders.defaultBinder()), mappers, converters);
+					parameterBinder.orElse(Binders.defaultBinder()), mappers, converters, entities);
 			return new QueriesImpl(QueriesSources.of(sources), QueriesParser.create(), QueryCompiler.of(config),
 					cache.orElse(Caches.noCache()), config);
 		}
+
 	}
 }

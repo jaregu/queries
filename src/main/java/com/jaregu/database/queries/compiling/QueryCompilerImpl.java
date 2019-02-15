@@ -33,7 +33,7 @@ class QueryCompilerImpl implements QueryCompiler, Compiler {
 				new NamedVariableFeature(parameterBinder),
 				new AnonymousVariableFeature(parameterBinder),
 				new AssignmentFeature(expressionParser),
-				new EntityFieldsFeature(expressionParser));
+				new EntityFieldsFeature(expressionParser, config.getEntities()));
 
 		return new QueryCompilerImpl(features, config.getDialect());
 	}

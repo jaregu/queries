@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
-import org.assertj.core.groups.Tuple;
 import org.junit.Test;
 
 import com.jaregu.database.queries.annotation.Column;

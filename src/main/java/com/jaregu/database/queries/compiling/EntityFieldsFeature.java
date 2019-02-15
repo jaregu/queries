@@ -93,8 +93,11 @@ final class EntityFieldsFeature implements QueryCompilerFeature {
 
 	final private ExpressionParser expressionParser;
 
-	EntityFieldsFeature(ExpressionParser expressionParser) {
+	final private Map<String, Class<?>> entities;
+
+	EntityFieldsFeature(ExpressionParser expressionParser, Map<String, Class<?>> entities) {
 		this.expressionParser = expressionParser;
+		this.entities = entities;
 	}
 
 	@Override
@@ -197,7 +200,12 @@ final class EntityFieldsFeature implements QueryCompilerFeature {
 
 	private Class<?> extractEntity(Map<ParameterType, String> parameterByType) {
 		try {
-			return Class.forName(parameterByType.get(ParameterType.entityClass));
+			String entityAliasOrClass = parameterByType.get(ParameterType.entityClass);
+			if (this.entities.containsKey(entityAliasOrClass)) {
+				return entities.get(entityAliasOrClass);
+			} else {
+				return Class.forName(entityAliasOrClass);
+			}
 		} catch (ClassNotFoundException e) {
 			throw new QueryCompileException(
 					"Entity fields generation feature syntax error: Entity class '"
