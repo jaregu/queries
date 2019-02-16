@@ -21,7 +21,7 @@ public final class OrderBy {
 	}
 
 	public static OrderByList desc(String property) {
-		return new OrderByList(Collections.singletonList(property));
+		return new OrderByList(Collections.singletonList(property + " " + SortOrder.DESC));
 	}
 
 	public static class OrderByList extends AbstractList<String> implements List<String> {
