@@ -2,8 +2,9 @@ package com.jaregu.database.queries.ext.guice;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -12,8 +13,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.jaregu.database.queries.Queries;
+import com.jaregu.database.queries.compiling.Entities;
 import com.jaregu.database.queries.parsing.QueriesSource;
 import com.jaregu.database.queries.parsing.QueriesSources;
 import com.jaregu.database.queries.parsing.Sources;
@@ -23,22 +26,41 @@ public class QueriesGuiceSupport {
 	private QueriesGuiceSupport() {
 	}
 
-	public static Module queriesModule(Function<QueriesSources, Queries> queriesSupplier) {
+	public static Module queriesModule(Consumer<Queries.Builder> queriesBuilderConsumer) {
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
 				// MME called at least one time for guice to create empty list if no source is supplied
 				Multibinder.newSetBinder(binder(), QueriesSource.class);
+				// MME called at least one time for guice to create empty list if no source is supplied
+				MapBinder.newMapBinder(binder(),
+						new TypeLiteral<String>() {
+						}, new TypeLiteral<Class<?>>() {
+						});
 
-				//Set<QueriesSource> queriesSources
 				TypeLiteral<Set<QueriesSource>> sourcesType = new TypeLiteral<Set<QueriesSource>>() {
 				};
+				TypeLiteral<Map<String, Class<?>>> entitiesType = new TypeLiteral<Map<String, Class<?>>>() {
+				};
 				Provider<Set<QueriesSource>> sourcesProvider = getProvider(Key.get(sourcesType));
+				Provider<Map<String, Class<?>>> entitiesProvider = getProvider(Key.get(entitiesType));
 
-				bind(Queries.class).toProvider(() -> queriesSupplier.apply(QueriesSources.of(sourcesProvider.get())))
-						.in(Singleton.class);
+				bind(Queries.class).toProvider(() -> {
+					Queries.Builder queriesBuilder = Queries
+							.builder()
+							.sources(sourcesProvider.get());
+
+					entitiesProvider.get()
+							.entrySet()
+							.forEach(e -> queriesBuilder.entity(e.getValue(), e.getKey()));
+
+					queriesBuilderConsumer.accept(queriesBuilder);
+
+					return queriesBuilder.build();
+				}).in(Singleton.class);
 			}
 		};
+
 	}
 
 	public static SourceModuleBuilder sourceModuleBuilder() {
@@ -49,17 +71,49 @@ public class QueriesGuiceSupport {
 		return sourceModuleBuilder().sources(sources).build();
 	}
 
+	/**
+	 * Module to add {@link Entities#entity(Class)}
+	 * 
+	 * @param entityClass
+	 * @return
+	 */
+	public static <T> Module entityModule(Class<T> entityClass) {
+		return entityModule(entityClass, entityClass.getSimpleName());
+	}
+
+	/**
+	 * Module to add {@link Entities#entity(Class, String)}
+	 * 
+	 * @param entityClass
+	 * @param alias
+	 * @return
+	 */
+	public static <T> Module entityModule(Class<T> entityClass, String alias) {
+
+		return new AbstractModule() {
+			@Override
+			protected void configure() {
+				MapBinder<String, Class<?>> entitiesBinder = MapBinder.newMapBinder(binder(),
+						new TypeLiteral<String>() {
+						}, new TypeLiteral<Class<?>>() {
+						});
+
+				entitiesBinder.addBinding(alias).toInstance(entityClass);
+			}
+		};
+	}
+
 	public static <T> Module proxyModule(Class<T> proxyInterface) {
 
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
-				Provider<Queries> provider = getProvider(Queries.class);
+				Provider<Queries> queriesProvider = getProvider(Queries.class);
 
 				Multibinder<QueriesSource> sourcesBinder = Multibinder.newSetBinder(binder(), QueriesSource.class);
 				sourcesBinder.addBinding().toInstance(QueriesSource.ofClass(proxyInterface));
 
-				bind(proxyInterface).toProvider(new ProxyInterfaceProvider<T>(provider, proxyInterface))
+				bind(proxyInterface).toProvider(new ProxyInterfaceProvider<T>(queriesProvider, proxyInterface))
 						.in(Singleton.class);
 			}
 		};

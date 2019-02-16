@@ -17,4 +17,6 @@ public interface QueriesConfig {
 	Map<Class<? extends Annotation>, QueryMapperFactory> getQueryMapperFactories();
 
 	Map<Class<? extends Annotation>, QueryConverterFactory> getQueryConverterFactories();
+
+	Map<String, Class<?>> getEntities();
 }
