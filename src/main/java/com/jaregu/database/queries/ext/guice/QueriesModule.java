@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -21,18 +20,22 @@ import com.jaregu.database.queries.parsing.QueriesSource;
 import com.jaregu.database.queries.parsing.QueriesSources;
 import com.jaregu.database.queries.parsing.Sources;
 
-public class QueriesGuiceSupport {
+public class QueriesModule {
 
-	private QueriesGuiceSupport() {
+	private QueriesModule() {
 	}
 
-	public static Module queriesModule(Consumer<Queries.Builder> queriesBuilderConsumer) {
+	public static Module queriesModule() {
 		return new AbstractModule() {
 			@Override
 			protected void configure() {
 				// MME called at least one time for guice to create empty list if no source is supplied
 				Multibinder.newSetBinder(binder(), QueriesSource.class);
-				// MME called at least one time for guice to create empty list if no source is supplied
+
+				// MME called at least one time for guice to create empty list if no configurator is supplied
+				Multibinder.newSetBinder(binder(), QueriesConfigurator.class);
+
+				// MME called at least one time for guice to create empty list if no entity class is registered
 				MapBinder.newMapBinder(binder(),
 						new TypeLiteral<String>() {
 						}, new TypeLiteral<Class<?>>() {
@@ -42,8 +45,11 @@ public class QueriesGuiceSupport {
 				};
 				TypeLiteral<Map<String, Class<?>>> entitiesType = new TypeLiteral<Map<String, Class<?>>>() {
 				};
+				TypeLiteral<Set<QueriesConfigurator>> configuratorType = new TypeLiteral<Set<QueriesConfigurator>>() {
+				};
 				Provider<Set<QueriesSource>> sourcesProvider = getProvider(Key.get(sourcesType));
 				Provider<Map<String, Class<?>>> entitiesProvider = getProvider(Key.get(entitiesType));
+				Provider<Set<QueriesConfigurator>> configuratorsProvider = getProvider(Key.get(configuratorType));
 
 				bind(Queries.class).toProvider(() -> {
 					Queries.Builder queriesBuilder = Queries
@@ -54,13 +60,36 @@ public class QueriesGuiceSupport {
 							.entrySet()
 							.forEach(e -> queriesBuilder.entity(e.getValue(), e.getKey()));
 
-					queriesBuilderConsumer.accept(queriesBuilder);
+					configuratorsProvider.get().forEach(c -> {
+						c.configure(queriesBuilder);
+					});
 
 					return queriesBuilder.build();
 				}).in(Singleton.class);
 			}
 		};
+	}
 
+	public static Module queriesConfiguratorModule(Class<? extends QueriesConfigurator> configuratorClass) {
+		return new AbstractModule() {
+			@Override
+			protected void configure() {
+				Multibinder<QueriesConfigurator> sourcesBinder = Multibinder.newSetBinder(binder(),
+						QueriesConfigurator.class);
+				sourcesBinder.addBinding().to(configuratorClass);
+			}
+		};
+	}
+
+	public static Module queriesConfiguratorModule(QueriesConfigurator configurator) {
+		return new AbstractModule() {
+			@Override
+			protected void configure() {
+				Multibinder<QueriesConfigurator> sourcesBinder = Multibinder.newSetBinder(binder(),
+						QueriesConfigurator.class);
+				sourcesBinder.addBinding().toInstance(configurator);
+			}
+		};
 	}
 
 	public static SourceModuleBuilder sourceModuleBuilder() {

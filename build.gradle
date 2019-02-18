@@ -75,8 +75,13 @@ dependencies {
 	compileOnly  'io.dropwizard.metrics:metrics-core:3.+'
 
 	// for guice extension
-	compileOnly "com.google.inject:guice:4.1.0"
-	compileOnly "com.google.inject.extensions:guice-multibindings:4.1.0"
+	compileOnly "com.google.inject:guice:4.+"
+	
+	// for hikari extension
+	compileOnly "com.zaxxer:HikariCP:3.+"
+	
+	// for dalesbred extension
+	compileOnly "org.dalesbred:dalesbred:1.3.+"
 
 	testCompile 'org.mockito:mockito-core:2.21.0'
 	testCompile 'junit:junit:4.12'
@@ -93,8 +98,8 @@ dependencies {
 	example 'org.mariadb.jdbc:mariadb-java-client:1.5.+'
 	example group: 'com.oracle', name: 'ojdbc6', version: '12.1.0.1-atlassian-hosted'
 
-	example "com.zaxxer:HikariCP:2.6+"
-	example 'org.dalesbred:dalesbred:1.2.+'
+	example "com.zaxxer:HikariCP:3.+"
+	example 'org.dalesbred:dalesbred:1.3.+'
 }
 
 jar {
