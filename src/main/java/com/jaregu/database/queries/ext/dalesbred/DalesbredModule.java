@@ -14,7 +14,7 @@ import com.google.inject.Module;
 import com.jaregu.database.queries.ext.guice.QueriesModule;
 
 /**
- * Module to support java interface <-> sql bridge using dalesbred library
+ * Module to support java interface to sql bridge using dalesbred library
  *
  */
 public class DalesbredModule extends AbstractModule {
