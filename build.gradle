@@ -8,7 +8,7 @@ buildscript {
 }
 
 plugins {
-  id 'com.gradle.build-scan' version '1.15.2'
+  id 'com.gradle.build-scan' version '2.2.1'
 }
 
 apply plugin: 'com.bmuschko.nexus'
@@ -24,8 +24,8 @@ repositories {
 }
 
 buildScan {
-	licenseAgreementUrl = "https://gradle.com/terms-of-service"
-	licenseAgree = "yes"
+	termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+    termsOfServiceAgree = 'yes'
 }
 
 [
@@ -66,6 +66,7 @@ eclipse {
 
 dependencies {
 	compile 'org.slf4j:slf4j-api:1.7.25'
+	
 	compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.9.+'
 	
 	// for caching extension
