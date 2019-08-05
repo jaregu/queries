@@ -239,9 +239,7 @@ final class EntityFieldsFeature implements QueryCompilerFeature {
 	private void checkHasAtLeastOneField(List<ColumnField> fields) {
 		if (fields.isEmpty())
 			throw new QueryCompileException(
-					"Entity fields generation feature template parameter expected values are one of: "
-							+ Arrays.asList(TemplateType.values()) + "!");
-
+					"Entity fields generation feature - entity doesn't contain any fields marked with @Column annotation!");
 	}
 
 	private static final class EnityFieldsPart implements PreparedQueryPart {
