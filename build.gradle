@@ -101,6 +101,8 @@ dependencies {
 
 	example "com.zaxxer:HikariCP:3.+"
 	example 'org.dalesbred:dalesbred:1.3.+'
+	example 'org.assertj:assertj-core:3.8.0'
+	example 'junit:junit:4.12'
 }
 
 jar {
@@ -132,7 +134,7 @@ modifyPom {
 
          developers {
              developer {
-                 id 'metimus'
+                 id 'mme-private'
                  name 'Mārcis Meijers'
                  email 'marcis.meijers@gmail.com'
                  roles {
