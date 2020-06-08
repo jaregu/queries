@@ -19,13 +19,17 @@ import com.jaregu.database.queries.ext.guice.QueriesModule;
  */
 public class DalesbredModule extends AbstractModule {
 
-	private DalesbredModule() {
+	private DalesbredModuleConfiguration configuration;
+
+	private DalesbredModule(DalesbredModuleConfiguration configuration) {
+		this.configuration = configuration;
 	}
 
 	@Override
 	protected void configure() {
 
 		bind(Database.class).toProvider(DalesbredDatabaseProvider.class).in(Singleton.class);
+		bind(DalesbredModuleConfiguration.class).toInstance(configuration);
 
 		Provider<Database> databaseProvider = binder().getProvider(Database.class);
 
@@ -43,6 +47,10 @@ public class DalesbredModule extends AbstractModule {
 	}
 
 	public static Module create() {
-		return new DalesbredModule();
+		return create(DalesbredModuleConfiguration.builder().build());
+	}
+
+	public static Module create(DalesbredModuleConfiguration configuration) {
+		return new DalesbredModule(configuration);
 	}
 }
