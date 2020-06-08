@@ -1,6 +1,5 @@
 package com.jaregu.database.queries.ext.dalesbred;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -16,9 +15,11 @@ import lombok.Value;
 @Singleton
 public class DalesbredModuleConfiguration {
 
-	@Singular
 	@NonNull
-	private List<ConversionRegistration<?, ?>> conversions = Collections.emptyList();
+	@Singular
+	private List<ConversionRegistration<?, ?>> conversions;
+
+	private String aaa;
 
 	@Value
 	@Builder
