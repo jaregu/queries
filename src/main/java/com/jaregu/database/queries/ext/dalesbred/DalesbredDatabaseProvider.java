@@ -29,7 +29,7 @@ public class DalesbredDatabaseProvider implements Provider<Database> {
 			ConversionRegistration<Object, Object> castedConversion = (ConversionRegistration<Object, Object>) conversion;
 			database.getTypeConversionRegistry().registerConversions(
 					castedConversion.getDatabaseType(),
-					castedConversion.getDatabaseType(),
+					castedConversion.getJavaType(),
 					castedConversion.getFromDatabase(),
 					castedConversion.getToDatabase());
 		}
