@@ -2,6 +2,7 @@ package com.jaregu.database.queries.dialect;
 
 import com.jaregu.database.queries.Queries;
 import com.jaregu.database.queries.building.Query;
+import com.jaregu.database.queries.parsing.QueriesSource;
 
 /**
  * Represents database dialect used to build some database specific query
@@ -23,6 +24,20 @@ import com.jaregu.database.queries.building.Query;
  * 
  */
 public interface Dialect {
+
+	/**
+	 * Returns suffix associated with this dialect. Used to configure some
+	 * dialect specific source files using {@link QueriesSource#ofClass(Class)}
+	 * 
+	 * <p>
+	 * When {@link Queries} is configured with some dialect
+	 * {@link Queries.Builder#dialect(Dialect)}, then source files used together
+	 * with dialect suffix (for example: someFile.mariadb.sql) are used instead
+	 * of default file (someFile.sql)
+	 * 
+	 * @return
+	 */
+	String getSuffix();
 
 	/**
 	 * 

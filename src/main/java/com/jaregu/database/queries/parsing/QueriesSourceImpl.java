@@ -1,16 +1,17 @@
 package com.jaregu.database.queries.parsing;
 
-import java.util.function.Supplier;
+import java.util.function.Function;
 
+import com.jaregu.database.queries.QueriesConfig;
 import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
 
 public class QueriesSourceImpl implements QueriesSource {
 
 	private SourceId sourceId;
-	private Supplier<String> contentSupplier;
+	private Function<QueriesConfig, String> contentSupplier;
 
-	public QueriesSourceImpl(SourceId sourceId, Supplier<String> contentSupplier) {
+	public QueriesSourceImpl(SourceId sourceId, Function<QueriesConfig, String> contentSupplier) {
 		this.sourceId = sourceId;
 		this.contentSupplier = contentSupplier;
 	}
@@ -20,8 +21,8 @@ public class QueriesSourceImpl implements QueriesSource {
 	}
 
 	@Override
-	public String getContent() {
-		return contentSupplier.get();
+	public String readContent(QueriesConfig config) {
+		return contentSupplier.apply(config);
 	}
 
 	@Override

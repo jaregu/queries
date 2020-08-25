@@ -59,10 +59,13 @@ public enum OperatorType implements Operator {
 			}).collect(Collectors.toList()));
 
 	private static final Map<Integer, List<Operator>> operatorsByPrecedence = Collections
-			.unmodifiableMap(Stream.of(values()).sorted((o1, o2) -> {
-				return Integer.compare(o2.getPrecedence(), o1.getPrecedence());
-			}).collect(
-					groupingBy(Operator::getPrecedence, LinkedHashMap::new, mapping(Function.identity(), toList()))));
+			.unmodifiableMap(Stream.of(values())
+					.map(ot -> (Operator) ot)
+					.sorted((o1, o2) -> {
+						return Integer.compare(o2.getPrecedence(), o1.getPrecedence());
+					}).collect(
+							groupingBy(Operator::getPrecedence, LinkedHashMap::new,
+									mapping(Function.identity(), toList()))));
 
 	private static final Map<String, Operator> orderedSequenceToOperator = Collections
 			.unmodifiableMap(Stream.of(values()).flatMap(o -> {

@@ -221,10 +221,18 @@ public interface Queries extends QueriesFinder<QueryId> {
 			if (sources.isEmpty())
 				throw new QueryParseException("Can't build Queries, sources is empty");
 
-			QueriesConfig config = new QueriesConfigImpl(dialect.orElse(Dialects.defaultDialect()),
-					parameterBinder.orElse(Binders.defaultBinder()), mappers, converters, entities);
-			return new QueriesImpl(QueriesSources.of(sources), QueriesParser.create(), QueryCompiler.of(config),
-					cache.orElse(Caches.noCache()), config);
+			QueriesConfig config = new QueriesConfigImpl(
+					dialect.orElse(Dialects.defaultDialect()),
+					parameterBinder.orElse(Binders.defaultBinder()),
+					mappers,
+					converters,
+					entities);
+			return new QueriesImpl(
+					QueriesSources.of(sources),
+					QueriesParser.of(config),
+					QueryCompiler.of(config),
+					cache.orElse(Caches.noCache()),
+					config);
 		}
 
 	}

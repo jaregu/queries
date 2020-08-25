@@ -12,6 +12,7 @@ import java.util.List;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import com.jaregu.database.queries.QueryId;
@@ -22,13 +23,13 @@ public class QueriesParserImplTest {
 
 	final private static SourceId SOURCE_ID = SourceId.ofId("some.source.id");
 
-	private QueriesParserImpl parser = new QueriesParserImpl();
+	private QueriesParserImpl parser = new QueriesParserImpl(null);
 
 	@Test(expected = QueryParseException.class)
 	public void testNoCommentParse() throws Exception {
 		QueriesSource source = mock(QueriesSource.class);
 		when(source.getId()).thenReturn(SOURCE_ID);
-		when(source.getContent()).thenReturn("some simple content");
+		when(source.readContent(Mockito.any())).thenReturn("some simple content");
 		parser.parse(source);
 	}
 
@@ -36,7 +37,7 @@ public class QueriesParserImplTest {
 	public void testNewLinesAfterQuery() throws Exception {
 		QueriesSource source = mock(QueriesSource.class);
 		when(source.getId()).thenReturn(SOURCE_ID);
-		when(source.getContent()).thenReturn("some simple content --query 1\n;\n\n\n\n\n");
+		when(source.readContent(Mockito.any())).thenReturn("some simple content --query 1\n;\n\n\n\n\n");
 		parser.parse(source);
 	}
 
@@ -132,12 +133,12 @@ public class QueriesParserImplTest {
 		ParsedQueryPart queryPart = null;
 		try {
 			QueriesSource source = mock(QueriesSource.class);
-			when(source.getContent()).thenReturn(sql);
+			when(source.readContent(Mockito.any())).thenReturn(sql);
 			when(source.getId()).thenReturn(SOURCE_ID);
 
 			sourceQueries = parser.parse(source);
 
-			verify(source, times(1)).getContent();
+			verify(source, times(1)).readContent(Mockito.any());
 
 			assertEquals(queries.queries.size(), sourceQueries.getQueries().size());
 			for (int i = 0; i < queries.queries.size(); i++) {

@@ -95,6 +95,10 @@ public interface Dialects<T extends Dialects<?>> {
 		return dialect(mySQL());
 	}
 
+	default T dialectMariaDB() {
+		return dialect(mariaDB());
+	}
+
 	default T dialectOracle12Plus() {
 		return dialect(oracle12Plus());
 	}
@@ -121,6 +125,10 @@ public interface Dialects<T extends Dialects<?>> {
 
 	static Dialect mySQL() {
 		return new MySQLDialect();
+	}
+
+	static Dialect mariaDB() {
+		return new MariaDBDialect();
 	}
 
 	static Dialect oracle12Plus() {

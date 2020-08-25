@@ -25,4 +25,9 @@ public class MicrosoftSQLServer2012PlusDialect extends DefaultDialectImpl {
 		}
 		return query;
 	}
+
+	@Override
+	public String getSuffix() {
+		return "mssql";
+	}
 }

@@ -1,9 +1,9 @@
 package com.jaregu.database.queries.dialect;
 
-public class MySQLDialect extends DefaultDialectImpl {
+public class MariaDBDialect extends DefaultDialectImpl {
 
 	@Override
 	public String getSuffix() {
-		return "mysql";
+		return "mariadb";
 	}
 }

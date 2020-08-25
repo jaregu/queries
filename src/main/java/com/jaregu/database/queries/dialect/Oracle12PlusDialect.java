@@ -25,4 +25,9 @@ public class Oracle12PlusDialect extends DefaultDialectImpl {
 		}
 		return query;
 	}
+
+	@Override
+	public String getSuffix() {
+		return "oracle";
+	}
 }

@@ -51,4 +51,9 @@ public class DefaultDialectImpl implements Dialect {
 						.append("\n) x");
 		return new QueryImpl(newSql.toString(), query.getParameters(), query.getAttributes(), this);
 	}
+
+	@Override
+	public String getSuffix() {
+		return null;
+	}
 }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.jaregu.database.queries.QueriesConfig;
 import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
 import com.jaregu.database.queries.common.Lexer;
@@ -23,13 +24,15 @@ class QueriesParserImpl implements QueriesParser {
 			.skipAllBetween("\"", "\"").skipSequence("::").stopAfterAnyOf(";").stopBeforeAnyOf("--", "/*", ":", "?")
 			.stopAtEof();
 	private static final StringSplitter BREAK_TO_LINES = StringSplitter.on('\n').includeSeparator(true);
+	private final QueriesConfig config;
 
-	QueriesParserImpl() {
+	QueriesParserImpl(QueriesConfig config) {
+		this.config = config;
 	}
 
 	@Override
 	public ParsedQueries parse(QueriesSource source) {
-		List<String> parts = splitSource(source.getContent());
+		List<String> parts = splitSource(source.readContent(config));
 		List<List<ParsedQueryPart>> queries = groupQueries(parts);
 		List<ParsedQuery> sourceQueries = queries.stream().map(q -> createSourceQuery(source.getId(), q))
 				.collect(Collectors.toList());

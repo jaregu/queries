@@ -2,11 +2,15 @@ package com.jaregu.database.queries.parsing;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.function.Supplier;
 
+import com.jaregu.database.queries.QueriesConfig;
 import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
 import com.jaregu.database.queries.common.StreamReader;
+import com.jaregu.database.queries.dialect.Dialect;
+import com.jaregu.database.queries.dialect.Dialects;
 
 /**
  * Implementations represents one SQL statements source. In one source can be
@@ -21,7 +25,7 @@ public interface QueriesSource {
 
 	QueryId getQueryId(String id);
 
-	String getContent();
+	String readContent(QueriesConfig config);
 
 	/**
 	 * Queries SQL source coming from supplier, can be used to load SQL content
@@ -33,7 +37,7 @@ public interface QueriesSource {
 	 * @return
 	 */
 	public static QueriesSource ofContent(SourceId sourceId, Supplier<String> contentSupplier) {
-		return new QueriesSourceImpl(sourceId, contentSupplier);
+		return new QueriesSourceImpl(sourceId, (c) -> contentSupplier.get());
 	}
 
 	/**
@@ -46,19 +50,34 @@ public interface QueriesSource {
 	 * Resulting queries source ID will be class name. See
 	 * {@link SourceId#ofClass(Class)}.
 	 * 
+	 * <p>
+	 * If there is file aaa/bbb/FooBar.{dialectSufix}.sql where dialectSufix is
+	 * configured {@link QueriesConfig#getDialect()}
+	 * {@link Dialect#getSuffix()} suffix (for example
+	 * aaa/bbb/FooBar.mariadb.sql using {@link Dialects#dialectMariaDB()} ),
+	 * then it used instead of default file (without suffix)
+	 * 
 	 * @param clazz
 	 * @return
 	 */
 	public static QueriesSource ofClass(Class<?> clazz) {
-		return new QueriesSourceImpl(SourceId.ofClass(clazz), () -> {
-			String resourceName = clazz.getSimpleName() + ".sql";
-			try (InputStream inputStream = clazz.getResourceAsStream(resourceName)) {
+		return new QueriesSourceImpl(SourceId.ofClass(clazz), (c) -> {
+			String sufix = Optional.ofNullable(c.getDialect().getSuffix()).map(s -> "." + s).orElse("");
+			String dialectResourceName = clazz.getSimpleName() + sufix + ".sql";
+			String defaultResourceName = clazz.getSimpleName() + ".sql";
+
+			InputStream inputStream = clazz.getResourceAsStream(dialectResourceName);
+			if (inputStream == null) {
+				inputStream = clazz.getResourceAsStream(defaultResourceName);
 				if (inputStream == null) {
-					throw new QueryParseException("Can't find resource with name: " + resourceName);
+					throw new QueryParseException("Can't find resource with name: " + defaultResourceName);
 				}
-				return StreamReader.toUtf8String(inputStream);
+			}
+
+			try (InputStream in = inputStream) {
+				return StreamReader.toUtf8String(in);
 			} catch (IOException exc) {
-				throw new QueryParseException("Error while reading from resource: " + resourceName, exc);
+				throw new QueryParseException("Error while reading from resource: " + defaultResourceName, exc);
 			}
 		});
 	}
@@ -76,7 +95,7 @@ public interface QueriesSource {
 	 * @return
 	 */
 	public static QueriesSource ofResource(String path) {
-		return new QueriesSourceImpl(SourceId.ofResource(path), () -> {
+		return new QueriesSourceImpl(SourceId.ofResource(path), (c) -> {
 			try (InputStream inputStream = QueriesSource.class.getClassLoader().getResourceAsStream(path)) {
 				if (inputStream == null) {
 					throw new QueryParseException("Can't find resource with path: " + path);
