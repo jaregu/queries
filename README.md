@@ -276,7 +276,7 @@ public class App {
 				QueriesModule.proxyModule(JobDAO.class),
 				QueriesModule.entityModule(Job.class));
 
-		// This is the place where we call out main code
+		// This is the place where we call our main code
 		injector.getInstance(Jobs.class).test();
 
 		connectionPool.shutDown();
