@@ -24,7 +24,7 @@ Main features:
 Add project dependencies (in build.gradle):
 ``` groovy
   dependencies {
-    ...
+    
     // Jaregu Queries
     implementation 'com.jaregu:queries:1.+'
     // DI Guice
@@ -39,7 +39,7 @@ Add project dependencies (in build.gradle):
     // Lombok for POJOs on steroids
     annotationProcessor 'org.projectlombok:lombok:1.+'
     compileOnly 'org.projectlombok:lombok:1.+'
-    ...
+    
   }
 ```
 
