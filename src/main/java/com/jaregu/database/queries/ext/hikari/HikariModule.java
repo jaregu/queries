@@ -1,11 +1,12 @@
 package com.jaregu.database.queries.ext.hikari;
 
-import javax.inject.Singleton;
 import javax.sql.DataSource;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
+
+import jakarta.inject.Singleton;
 
 public class HikariModule extends AbstractModule {
 

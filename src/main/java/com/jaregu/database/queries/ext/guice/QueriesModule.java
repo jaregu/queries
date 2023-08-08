@@ -5,9 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Module;
@@ -19,6 +16,9 @@ import com.jaregu.database.queries.compiling.Entities;
 import com.jaregu.database.queries.parsing.QueriesSource;
 import com.jaregu.database.queries.parsing.QueriesSources;
 import com.jaregu.database.queries.parsing.Sources;
+
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 
 public class QueriesModule {
 

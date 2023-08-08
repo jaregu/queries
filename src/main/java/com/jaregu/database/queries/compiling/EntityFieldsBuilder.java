@@ -1,7 +1,7 @@
 package com.jaregu.database.queries.compiling;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -53,10 +53,9 @@ public class EntityFieldsBuilder {
 				.filter(cf -> cf != null)
 				.collect(Collectors.toList());
 
-		List<ColumnField> combined = new ArrayList<>(namesFromMethods.size() + namesFromFields.size());
-		combined.addAll(namesFromFields);
-		combined.addAll(namesFromMethods);
-		return combined;
+		return Stream.concat(namesFromFields.stream(), namesFromMethods.stream())
+				.sorted(Comparator.comparing(ColumnField::getField))
+				.collect(Collectors.toList());
 	}
 
 	private String getColumnName(Column columnAnnotation, String field) {

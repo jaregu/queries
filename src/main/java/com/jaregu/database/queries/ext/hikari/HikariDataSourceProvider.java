@@ -2,15 +2,16 @@ package com.jaregu.database.queries.ext.hikari;
 
 import java.lang.invoke.MethodHandles;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.zaxxer.hikari.HikariDataSource;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 
 @Singleton
 class HikariDataSourceProvider implements Provider<DataSource> {

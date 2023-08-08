@@ -11,6 +11,6 @@ public class IteratorResolverTest {
 	@Test
 	public void testStaticOf() {
 		IteratorResolver resolver = IteratorResolver.of(Arrays.asList("a", "bb", 3));
-		assertThat(resolver).containsExactly("a", "bb", 3);
+		assertThat(resolver).toIterable().containsExactly("a", "bb", 3);
 	}
 }

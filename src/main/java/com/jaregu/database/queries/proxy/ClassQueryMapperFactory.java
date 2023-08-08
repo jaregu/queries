@@ -12,7 +12,7 @@ class ClassQueryMapperFactory implements QueryMapperFactory {
 		ClassQueryMapper classMapper = (ClassQueryMapper) annotation;
 		QueryMapper<?> queryMapper;
 		try {
-			queryMapper = classMapper.value().newInstance();
+			queryMapper = classMapper.value().getDeclaredConstructor().newInstance();
 		} catch (Exception e) {
 			throw new QueryProxyException("Problem instantiating query mapper class with no argument constructor " + e,
 					e);

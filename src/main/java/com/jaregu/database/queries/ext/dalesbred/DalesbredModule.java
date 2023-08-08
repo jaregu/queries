@@ -3,15 +3,15 @@ package com.jaregu.database.queries.ext.dalesbred;
 import static com.google.inject.matcher.Matchers.annotatedWith;
 import static com.google.inject.matcher.Matchers.any;
 
-import javax.inject.Provider;
-import javax.inject.Singleton;
-
 import org.aopalliance.intercept.MethodInterceptor;
 import org.dalesbred.Database;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.jaregu.database.queries.ext.guice.QueriesModule;
+
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 
 /**
  * Module to support java interface to sql bridge using dalesbred library

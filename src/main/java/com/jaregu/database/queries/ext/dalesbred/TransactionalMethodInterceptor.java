@@ -2,14 +2,14 @@ package com.jaregu.database.queries.ext.dalesbred;
 
 import java.lang.reflect.Method;
 
-import javax.inject.Provider;
-
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.dalesbred.Database;
 import org.dalesbred.transaction.TransactionCallback;
 import org.dalesbred.transaction.TransactionContext;
 import org.dalesbred.transaction.TransactionSettings;
+
+import jakarta.inject.Provider;
 
 public final class TransactionalMethodInterceptor implements MethodInterceptor {
 

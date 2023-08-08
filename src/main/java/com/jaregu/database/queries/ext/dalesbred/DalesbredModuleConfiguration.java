@@ -3,8 +3,7 @@ package com.jaregu.database.queries.ext.dalesbred;
 import java.util.List;
 import java.util.function.Function;
 
-import javax.inject.Singleton;
-
+import jakarta.inject.Singleton;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;

@@ -97,7 +97,8 @@ public final class QueriesInvocationHandler implements InvocationHandler {
 			RegisteredSourceIdProducer sourceIdProviderAnnotation = sourceAnnotation.get().annotationType()
 					.getAnnotation(RegisteredSourceIdProducer.class);
 			try {
-				SourceIdProducer sourceIdProducer = sourceIdProviderAnnotation.value().newInstance();
+				SourceIdProducer sourceIdProducer = sourceIdProviderAnnotation.value().getDeclaredConstructor()
+						.newInstance();
 				sourceId = sourceIdProducer.get(element, sourceAnnotation.get());
 			} catch (Exception e) {
 				throw new QueryProxyException("Problem with sourceId aquiring: can't find suitable constructor " + e,
@@ -147,7 +148,7 @@ public final class QueriesInvocationHandler implements InvocationHandler {
 								+ "Set static converter using @Converter annotation value or use Queries.Builder.converter() method to register factory instance!");
 					}
 					try {
-						factory = converterFactoryClass.newInstance();
+						factory = converterFactoryClass.getDeclaredConstructor().newInstance();
 					} catch (Exception e) {
 						throw new QueryProxyException(
 								"Problem instantiating query converter factory class with no argument constructor " + e,
@@ -219,7 +220,7 @@ public final class QueriesInvocationHandler implements InvocationHandler {
 							+ "Set static factory using @Mapper annotation value or use Queries.Builder.mapper() method to register factory instance!");
 				}
 				try {
-					factory = mapperFactoryClass.newInstance();
+					factory = mapperFactoryClass.getDeclaredConstructor().newInstance();
 				} catch (Exception e) {
 					throw new QueryProxyException(
 							"Problem instantiating query mapper factory class with no argument constructor " + e, e);

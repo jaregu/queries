@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.InvocationHandler;
@@ -179,7 +179,7 @@ public class QueriesImplTest {
 		assertThat(query12).isSameAs(preparedQuery12);
 		assertThat(query21).isSameAs(preparedQuery21);
 
-		verifyZeroInteractions(parser);
+		verifyNoInteractions(parser);
 		verify(cache, times(2)).getParsedQueries(eq(source1Id), any());
 		verify(compiler, times(1)).compile(parsedQuery11);
 		verify(compiler, times(1)).compile(parsedQuery12);
@@ -220,8 +220,8 @@ public class QueriesImplTest {
 		assertThat(query12).isSameAs(preparedQuery12);
 		assertThat(query21).isSameAs(preparedQuery21);
 
-		verifyZeroInteractions(parser);
-		verifyZeroInteractions(compiler);
+		verifyNoInteractions(parser);
+		verifyNoInteractions(compiler);
 
 		verify(cache, never()).getParsedQueries(eq(source1Id), any());
 		verify(cache, never()).getParsedQueries(eq(source2Id), any());

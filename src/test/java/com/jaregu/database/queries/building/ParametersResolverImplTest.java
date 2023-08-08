@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.function.Supplier;
@@ -47,7 +47,7 @@ public class ParametersResolverImplTest {
 		verify(namedSupplier, times(1)).get();
 		assertThatThrownBy(() -> resolver.toIterator()).isInstanceOf(QueryBuildException.class);
 		assertThatThrownBy(() -> resolver.toIterator()).isInstanceOf(QueryBuildException.class);
-		verifyZeroInteractions(iteratorSupplier);
+		verifyNoInteractions(iteratorSupplier);
 	}
 
 	@Test
@@ -57,6 +57,6 @@ public class ParametersResolverImplTest {
 		verify(iteratorSupplier, times(1)).get();
 		assertThatThrownBy(() -> resolver.toNamed()).isInstanceOf(QueryBuildException.class);
 		assertThatThrownBy(() -> resolver.toNamed()).isInstanceOf(QueryBuildException.class);
-		verifyZeroInteractions(namedSupplier);
+		verifyNoInteractions(namedSupplier);
 	}
 }

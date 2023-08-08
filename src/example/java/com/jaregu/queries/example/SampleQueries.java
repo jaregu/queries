@@ -13,8 +13,8 @@ import javax.sql.DataSource;
 
 import org.dalesbred.Database;
 import org.dalesbred.query.SqlQuery;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.jaregu.database.queries.Queries;
 import com.jaregu.database.queries.RelativeQueries;
@@ -34,7 +34,7 @@ public class SampleQueries {
 	private Queries queries;
 	private RelativeQueries rq;
 
-	@Before
+	@BeforeAll
 	public void setUp() {
 
 		HikariConfig config = new HikariConfig("/com/jaregu/queries/example/hikari.properties");

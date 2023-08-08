@@ -11,6 +11,6 @@ public class IteratorResolverImplTest {
 	@Test
 	public void testDefaultImplementation() {
 		IteratorResolverImpl resolver = new IteratorResolverImpl(Arrays.asList("a", "bb", 3));
-		assertThat(resolver).containsExactly("a", "bb", 3);
+		assertThat(resolver).toIterable().containsExactly("a", "bb", 3);
 	}
 }

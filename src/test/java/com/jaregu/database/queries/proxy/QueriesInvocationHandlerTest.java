@@ -169,9 +169,9 @@ public class QueriesInvocationHandlerTest {
 		verify(preparedQuery11, times(3)).build(capturedResolver.capture());
 
 		assertThat(result).isSameAs(this.query11);
-		assertThat(capturedResolver.getAllValues().get(0).toIterator()).containsExactly("1");
-		assertThat(capturedResolver.getAllValues().get(1).toIterator()).containsExactly("1", "2");
-		assertThat(capturedResolver.getAllValues().get(2).toIterator()).containsExactly("1", "2", "3");
+		assertThat(capturedResolver.getAllValues().get(0).toIterator()).toIterable().containsExactly("1");
+		assertThat(capturedResolver.getAllValues().get(1).toIterator()).toIterable().containsExactly("1", "2");
+		assertThat(capturedResolver.getAllValues().get(2).toIterator()).toIterable().containsExactly("1", "2", "3");
 	}
 
 	@Test
@@ -221,7 +221,7 @@ public class QueriesInvocationHandlerTest {
 		verify(preparedQuery11, times(1)).build(capturedResolver.capture());
 
 		assertThat(query11).isSameAs(this.query11);
-		assertThat(capturedResolver.getValue().toIterator()).containsExactly(Arrays.asList("1", "2"),
+		assertThat(capturedResolver.getValue().toIterator()).toIterable().containsExactly(Arrays.asList("1", "2"),
 				Collections.singletonMap("aaa", 222), "333");
 	}
 

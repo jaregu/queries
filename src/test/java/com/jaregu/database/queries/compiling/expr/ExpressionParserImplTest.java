@@ -8,10 +8,12 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -441,11 +443,11 @@ public class ExpressionParserImplTest {
 	}
 
 	public static class CollectionsHolder {
-		public Set<String> emptySet = Collections.emptySet();
-		public List<String> emptyList = Collections.emptyList();
-		public Map<String, String> emptyMap = Collections.emptyMap();
+		public Set<String> emptySet = new HashSet<>();
+		public List<String> emptyList = new ArrayList<>();
+		public Map<String, String> emptyMap = new HashMap<>();
 		public List<String> col1 = Collections.singletonList("1");
-		public List<Integer> numbers = Collections.unmodifiableList(Arrays.asList(1, 2, 3, 4));
-		public List<String> strings = Collections.unmodifiableList(Arrays.asList("a", "b", "c"));
+		public List<Integer> numbers = Arrays.asList(1, 2, 3, 4);
+		public List<String> strings = Arrays.asList("a", "b", "c");
 	}
 }

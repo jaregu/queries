@@ -1,13 +1,14 @@
 package com.jaregu.database.queries.ext.dalesbred;
 
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 import javax.sql.DataSource;
 
 import org.dalesbred.Database;
 
 import com.jaregu.database.queries.ext.dalesbred.DalesbredModuleConfiguration.ConversionRegistration;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class DalesbredDatabaseProvider implements Provider<Database> {

@@ -70,7 +70,8 @@ public class EntityFieldsFeatureTest {
 
 		PreparedQueryPart.Result build = compilePart(part);
 
-		assertThat(build.getSql().get()).isEqualToNormalizingWhitespace("first, second_col, third_col, fourth_col");
+		assertThat(build.getSql().get().strip())
+				.isEqualToNormalizingWhitespace("first, fourth_col, second_col, third_col");
 	}
 
 	@Test
@@ -80,8 +81,8 @@ public class EntityFieldsFeatureTest {
 
 		PreparedQueryPart.Result build = compilePart(part);
 
-		assertThat(build.getSql().get())
-				.isEqualToNormalizingWhitespace("x.first, x.second_col, x.third_col, x.fourth_col");
+		assertThat(build.getSql().get().strip())
+				.isEqualToNormalizingWhitespace("x.first, x.fourth_col, x.second_col, x.third_col");
 	}
 
 	@Test
@@ -91,7 +92,7 @@ public class EntityFieldsFeatureTest {
 
 		PreparedQueryPart.Result build = compilePart(part);
 
-		assertThat(build.getSql().get()).isEqualToNormalizingWhitespace("second_col, third_col");
+		assertThat(build.getSql().get().strip()).isEqualToNormalizingWhitespace("second_col, third_col");
 	}
 
 	@Test

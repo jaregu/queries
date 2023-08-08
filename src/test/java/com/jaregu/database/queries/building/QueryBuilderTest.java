@@ -136,7 +136,7 @@ public class QueryBuilderTest {
 	}
 
 	private void testIteratorResolver(IteratorResolver resolver, Object... values) {
-		assertThat(resolver).containsExactly(values);
+		assertThat(resolver).toIterable().containsExactly(values);
 	}
 
 	private void testNamedResolver(NamedResolver resolver, Object... keyValue) {

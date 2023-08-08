@@ -3,12 +3,12 @@ package com.jaregu.database.queries.ext.dalesbred;
 import java.lang.annotation.Annotation;
 import java.util.Optional;
 
-import javax.inject.Provider;
-
 import org.dalesbred.Database;
 
 import com.jaregu.database.queries.proxy.QueryMapper;
 import com.jaregu.database.queries.proxy.QueryMapperFactory;
+
+import jakarta.inject.Provider;
 
 public class FindOptionalFactory implements QueryMapperFactory {
 
