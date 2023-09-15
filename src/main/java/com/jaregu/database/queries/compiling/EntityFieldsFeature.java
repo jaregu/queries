@@ -34,6 +34,12 @@ import com.jaregu.database.queries.parsing.ParsedQueryPart;
  * [SQL] SELECT -- entityFieldGenerator(template = 'column'; entityClass = 'some.package.SomeTable'; alias = 'st') 
  * FROM some_table st [SQL]
  * </pre>
+ * 
+ * Important note: When using
+ * {@link com.jaregu.database.queries.annotation.Column} on methods, the
+ * resulting SQL fields from method annotations will be in alphabetical order.
+ * This is because Java doesn't guarantee any specific order when returning the
+ * list.
  */
 final class EntityFieldsFeature implements QueryCompilerFeature {
 

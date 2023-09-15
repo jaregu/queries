@@ -25,26 +25,27 @@ public class EntityFieldsBuilderTest {
 		List<ColumnField> columnList = test.build();
 
 		assertThat(columnList)
-				.hasSize(4)
 				.extracting(ColumnField::getField, ColumnField::getColumn)
-				.containsOnly(
+				.containsExactly(
 						tuple("first", "first"),
-						tuple("second", "second_col"),
-						tuple("third", "third_col"),
-						tuple("fourth", "fourth_col"));
+						tuple("secondSecond", "second_col"),
+						tuple("thirdField", "third_col"),
+						tuple("fiveIsString", "fifth_col"),
+						tuple("fourth", "fourth_col"),
+						tuple("sixt", "six_col"));
 	}
 
 	@Test
 	public void testExcludeWithAlias() {
 
 		EntityFieldsBuilder test = new EntityFieldsBuilder(SomeTable.class,
-				new HashSet<>(Arrays.asList("second_col", "third_col")), Optional.of("x"));
+				new HashSet<>(Arrays.asList("second_col", "third_col", "six_col", "fifth_col")), Optional.of("x"));
 		List<ColumnField> columnList = test.build();
 
 		assertThat(columnList)
 				.hasSize(2)
 				.extracting(ColumnField::getField, ColumnField::getColumn)
-				.containsOnly(tuple("first", "x.first"),
+				.containsExactly(tuple("first", "x.first"),
 						tuple("fourth", "x.fourth_col"));
 
 	}
@@ -57,9 +58,15 @@ public class EntityFieldsBuilderTest {
 		@Column
 		private Long first;
 
+		@Column(name = "second_col")
 		private Long secondSecond;
 
-		private boolean thirdAsBool;
+		@Column(name = "third_col")
+		private Long thirdField;
+
+		private boolean sixAsBool;
+
+		private String fiveIsString;
 
 		private String fourthIsString;
 
@@ -75,27 +82,35 @@ public class EntityFieldsBuilderTest {
 			this.secondSecond = secondSecond;
 		}
 
-		@Column(name = "second_col")
 		public Long getSecond() {
 			return secondSecond;
 		}
 
-		public void setThird(boolean third) {
-			this.thirdAsBool = third;
+		public void setSixt(boolean third) {
+			this.sixAsBool = third;
 		}
 
-		@Column(name = "third_col")
-		public boolean isThird() {
-			return thirdAsBool;
+		@Column(name = "six_col")
+		public boolean isSixt() {
+			return sixAsBool;
 		}
 
-		public String getFourth() {
+		public String getFourthIsString() {
 			return fourthIsString;
 		}
 
 		@Column(name = "fourth_col")
 		public void setFourth(String fourth) {
 			this.fourthIsString = fourth;
+		}
+
+		public void setFiveIsString(String fiveIsString) {
+			this.fiveIsString = fiveIsString;
+		}
+
+		@Column(name = "fifth_col")
+		public String getFiveIsString() {
+			return fiveIsString;
 		}
 	}
 }

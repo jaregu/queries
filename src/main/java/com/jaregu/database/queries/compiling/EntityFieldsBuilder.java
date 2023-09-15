@@ -1,6 +1,7 @@
 package com.jaregu.database.queries.compiling;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,19 @@ public class EntityFieldsBuilder {
 
 	public List<ColumnField> build() {
 		String columnAliasPrefix = alias.map(a -> a + ".").orElse("");
+
+		List<ColumnField> namesFromFields = Stream.of(entityClass.getDeclaredFields())
+				.filter(f -> f.isAnnotationPresent(Column.class))
+				.map(f -> {
+					Column columnAnnotation = f.getAnnotation(Column.class);
+					String columnName = getColumnName(columnAnnotation, f.getName());
+					String column = columnAliasPrefix + columnName;
+					String field = f.getName();
+					return excludedColumns.contains(columnName) ? null : new ColumnFieldImpl(column, field);
+				})
+				.filter(cf -> cf != null)
+				.collect(Collectors.toList());
+
 		List<ColumnField> namesFromMethods = Stream.of(entityClass.getDeclaredMethods())
 				.filter(method -> method.isAnnotationPresent(Column.class))
 				.filter(method -> method.getName().startsWith("get")
@@ -39,23 +53,13 @@ public class EntityFieldsBuilder {
 					return excludedColumns.contains(columnName) ? null : new ColumnFieldImpl(column, field);
 				})
 				.filter(cf -> cf != null)
-				.collect(Collectors.toList());
-
-		List<ColumnField> namesFromFields = Stream.of(entityClass.getDeclaredFields())
-				.filter(f -> f.isAnnotationPresent(Column.class))
-				.map(f -> {
-					Column columnAnnotation = f.getAnnotation(Column.class);
-					String columnName = getColumnName(columnAnnotation, f.getName());
-					String column = columnAliasPrefix + columnName;
-					String field = f.getName();
-					return excludedColumns.contains(columnName) ? null : new ColumnFieldImpl(column, field);
-				})
-				.filter(cf -> cf != null)
-				.collect(Collectors.toList());
-
-		return Stream.concat(namesFromFields.stream(), namesFromMethods.stream())
 				.sorted(Comparator.comparing(ColumnField::getField))
 				.collect(Collectors.toList());
+
+		List<ColumnField> combined = new ArrayList<>(namesFromMethods.size() + namesFromFields.size());
+		combined.addAll(namesFromFields);
+		combined.addAll(namesFromMethods);
+		return combined;
 	}
 
 	private String getColumnName(Column columnAnnotation, String field) {
