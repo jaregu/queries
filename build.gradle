@@ -8,7 +8,7 @@ plugins {
 
 allprojects {
 	group = 'com.jaregu'
-	version = '2.0.0-SNAPSHOT'
+	// `version` is set by Reckon in settings.gradle from the current git state.
 
 	repositories {
 		mavenCentral()
@@ -45,6 +45,10 @@ ext.configureCommonPom = { pom ->
 }
 
 // Shared Java + publishing config for the root 'queries' artifact AND every subproject.
+// Java toolchain version is 17 by default; override with `-PjavaVersion=21`
+// (used by the CI matrix to verify the library works on newer JDKs).
+def javaToolchainVersion = (project.findProperty('javaVersion') ?: '17').toString()
+
 configure([rootProject] + subprojects) { proj ->
 	proj.apply plugin: 'java-library'
 	proj.apply plugin: 'maven-publish'
@@ -52,7 +56,7 @@ configure([rootProject] + subprojects) { proj ->
 
 	proj.java {
 		toolchain {
-			languageVersion = JavaLanguageVersion.of(17)
+			languageVersion = JavaLanguageVersion.of(javaToolchainVersion as int)
 		}
 		withSourcesJar()
 		withJavadocJar()
@@ -77,6 +81,15 @@ configure([rootProject] + subprojects) { proj ->
 	proj.signing {
 		// Sign release artifacts only; SNAPSHOT publishing skips signing.
 		required = !proj.version.toString().endsWith('SNAPSHOT')
+
+		// CI flow: ASCII-armored PGP key supplied via env vars
+		// (ORG_GRADLE_PROJECT_signingInMemoryKey / *_signingInMemoryPassword).
+		// Local flow: fall back to whatever ~/.gradle/gradle.properties points at.
+		def inMemoryKey = proj.findProperty('signingInMemoryKey')
+		def inMemoryPassword = proj.findProperty('signingInMemoryPassword')
+		if (inMemoryKey && inMemoryPassword) {
+			useInMemoryPgpKeys(inMemoryKey.toString(), inMemoryPassword.toString())
+		}
 	}
 
 	// Disable Sign tasks for SNAPSHOTs at config time so the default
