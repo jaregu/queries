@@ -12,7 +12,7 @@ reckon {
 	snapshots()
 	setScopeCalc(calcScopeFromProp())
 	setStageCalc(calcStageFromProp())
-	setTagWriter { v -> "v$v" }
+	setTagWriter { v -> 'v' + v }
 	setTagParser { tag ->
 		tag.startsWith('v')
 			? org.ajoberstar.reckon.core.Version.parse(tag.substring(1))
