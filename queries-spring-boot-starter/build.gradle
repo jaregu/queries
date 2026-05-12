@@ -4,19 +4,19 @@ base {
 
 dependencies {
 	api project(':')
-	api 'org.springframework.boot:spring-boot-autoconfigure:3.3.4'
-	api 'org.springframework:spring-jdbc:6.1.13'
-	api 'org.springframework:spring-tx:6.1.13'
+	api 'org.springframework.boot:spring-boot-autoconfigure:4.0.6'
+	api 'org.springframework:spring-jdbc:7.0.7'
+	api 'org.springframework:spring-tx:7.0.7'
 
-	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:3.3.4'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:4.0.6'
 
-	testImplementation platform('org.junit:junit-bom:5.10.3')
+	testImplementation platform('org.junit:junit-bom:6.0.3')
 	testImplementation 'org.junit.jupiter:junit-jupiter'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testImplementation 'org.assertj:assertj-core:3.26.3'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test:3.3.4'
-	testImplementation 'org.springframework.boot:spring-boot-starter-jdbc:3.3.4'
-	testImplementation 'org.hsqldb:hsqldb:2.7.3'
+	testImplementation 'org.assertj:assertj-core:3.27.7'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test:4.0.6'
+	testImplementation 'org.springframework.boot:spring-boot-starter-jdbc:4.0.6'
+	testImplementation 'org.hsqldb:hsqldb:2.7.4'
 }
 
 jar {

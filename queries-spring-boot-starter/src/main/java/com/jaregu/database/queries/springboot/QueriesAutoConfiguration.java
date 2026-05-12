@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
@@ -35,7 +34,9 @@ import com.jaregu.database.queries.parsing.QueriesSource;
  * {@code QueriesConfigurator} type is used by the Guice integration, so
  * configurators are portable between both worlds.
  */
-@AutoConfiguration(after = DataSourceAutoConfiguration.class)
+// `afterName` (not `after`) so we don't need a hard compile-time dep on
+// spring-boot-jdbc just to reference the DataSource autoconfig class.
+@AutoConfiguration(afterName = "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration")
 @ConditionalOnClass({ Queries.class, JdbcClient.class })
 @ConditionalOnBean(DataSource.class)
 public class QueriesAutoConfiguration {

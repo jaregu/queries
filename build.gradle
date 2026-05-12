@@ -12,8 +12,6 @@ allprojects {
 
 	repositories {
 		mavenCentral()
-		// Atlassian-hosted mirror for legacy ojdbc6 used by the example sourceset
-		maven { url 'https://maven.atlassian.com/3rdparty/' }
 	}
 }
 
@@ -102,6 +100,12 @@ sourceSets {
 	example {
 		java { srcDir 'src/example/java' }
 		resources { srcDir 'src/example/resources' }
+		// Make the main sourceset visible to example code. (testImplementation
+		// doesn't extend implementation in modern Gradle, so the chain
+		// `exampleImplementation extends testImplementation` is not enough on
+		// its own to expose the main module's compiled classes.)
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
 	}
 }
 
@@ -118,56 +122,56 @@ eclipse {
 }
 
 dependencies {
-	api 'org.slf4j:slf4j-api:2.0.13'
+	api 'org.slf4j:slf4j-api:2.0.18'
 
-	compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.17.2'
+	compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.21'
 
 	// for caching extension
-	compileOnly 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+	compileOnly 'com.github.ben-manes.caffeine:caffeine:3.2.4'
 
 	// for metrics extension
-	compileOnly 'io.dropwizard.metrics5:metrics-core:5.0.0'
+	compileOnly 'io.dropwizard.metrics5:metrics-core:5.0.6'
 
 	// for guice extension
 	compileOnly 'com.google.inject:guice:7.0.0'
 
 	// for hikari extension
-	compileOnly 'com.zaxxer:HikariCP:5.1.0'
+	compileOnly 'com.zaxxer:HikariCP:7.0.2'
 
 	// for dalesbred extension
-	compileOnly 'org.dalesbred:dalesbred:1.3.5'
+	compileOnly 'org.dalesbred:dalesbred:1.3.7'
 
 	// for spring extension (JdbcClient / JdbcTemplate)
-	compileOnly 'org.springframework:spring-jdbc:6.1.13'
-	compileOnly 'org.springframework:spring-tx:6.1.13'
+	compileOnly 'org.springframework:spring-jdbc:7.0.7'
+	compileOnly 'org.springframework:spring-tx:7.0.7'
 
-	testImplementation 'org.mockito:mockito-core:5.12.0'
-	testImplementation 'org.mockito:mockito-junit-jupiter:5.12.0'
-	testImplementation platform('org.junit:junit-bom:5.10.3')
+	testImplementation 'org.mockito:mockito-core:5.23.0'
+	testImplementation 'org.mockito:mockito-junit-jupiter:5.23.0'
+	testImplementation platform('org.junit:junit-bom:6.0.3')
 	testImplementation 'org.junit.jupiter:junit-jupiter'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testImplementation 'org.assertj:assertj-core:3.26.3'
-	testImplementation 'org.dalesbred:dalesbred:1.3.5'
+	testImplementation 'org.assertj:assertj-core:3.27.7'
+	testImplementation 'org.dalesbred:dalesbred:1.3.7'
 
 	// For tests that exercise the ext.spring factories against an in-memory DB
-	testImplementation 'org.springframework:spring-jdbc:6.1.13'
-	testImplementation 'org.hsqldb:hsqldb:2.7.3'
+	testImplementation 'org.springframework:spring-jdbc:7.0.7'
+	testImplementation 'org.hsqldb:hsqldb:2.7.4'
 
-	exampleImplementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+	exampleImplementation 'com.github.ben-manes.caffeine:caffeine:3.2.4'
 
 	// logging
-	exampleImplementation 'ch.qos.logback:logback-classic:1.5.6'
+	exampleImplementation 'ch.qos.logback:logback-classic:1.5.32'
 
 	// db
-	exampleImplementation 'org.hsqldb:hsqldb:2.7.3'
-	exampleImplementation 'org.mariadb.jdbc:mariadb-java-client:3.4.1'
-	exampleImplementation group: 'com.oracle', name: 'ojdbc6', version: '12.1.0.1-atlassian-hosted'
+	exampleImplementation 'org.hsqldb:hsqldb:2.7.4'
+	exampleImplementation 'org.mariadb.jdbc:mariadb-java-client:3.5.8'
+	exampleImplementation 'com.oracle.database.jdbc:ojdbc17:23.26.2.0.0'
 
-	exampleImplementation 'com.zaxxer:HikariCP:5.1.0'
-	exampleImplementation 'org.dalesbred:dalesbred:1.3.5'
-	exampleImplementation 'org.assertj:assertj-core:3.26.3'
+	exampleImplementation 'com.zaxxer:HikariCP:7.0.2'
+	exampleImplementation 'org.dalesbred:dalesbred:1.3.7'
+	exampleImplementation 'org.assertj:assertj-core:3.27.7'
 
-	def lombokVersion = '1.18.34'
+	def lombokVersion = '1.18.46'
 	annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 	compileOnly "org.projectlombok:lombok:${lombokVersion}"
 	testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -201,17 +205,11 @@ signing {
 	sign publishing.publications.mavenJava
 }
 
-// ---------------------------------------------------------------------------
-// Sonatype OSSRH publishing — staging repo created automatically.
-// Credentials read from ~/.gradle/gradle.properties or environment variables
-// (ORG_GRADLE_PROJECT_sonatypeUsername / ORG_GRADLE_PROJECT_sonatypePassword).
-// ---------------------------------------------------------------------------
-
 nexusPublishing {
 	repositories {
 		sonatype {
-			nexusUrl.set(uri('https://s01.oss.sonatype.org/service/local/'))
-			snapshotRepositoryUrl.set(uri('https://s01.oss.sonatype.org/content/repositories/snapshots/'))
+			nexusUrl.set(uri('https://ossrh-staging-api.central.sonatype.com/service/local/'))
+			snapshotRepositoryUrl.set(uri('https://central.sonatype.com/repository/maven-snapshots/'))
 		}
 	}
 }
