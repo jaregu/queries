@@ -3,6 +3,8 @@ package com.jaregu.database.queries.springboot;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -116,6 +118,56 @@ class QueriesAutoConfigurationTest {
 		@Bean
 		QueriesEntity itemEntity() {
 			return QueriesEntity.of(StarterItem.class, "item");
+		}
+	}
+
+	@Test
+	void entityFieldGeneratorMacroExpandsAndQueryExecutes() {
+		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(TestApp.class)
+				.web(WebApplicationType.NONE)
+				.properties(
+						"spring.datasource.url=jdbc:hsqldb:mem:starter-entity-fields-test",
+						"spring.datasource.username=SA",
+						"spring.datasource.password=",
+						"spring.datasource.driver-class-name=org.hsqldb.jdbc.JDBCDriver")
+				.run();
+		try {
+			// The DAO's SQL file uses entityFieldGenerator(...) macros that
+			// resolve `entityClass = 'StarterEntity'` against the QueriesEntity
+			// bean the scanner registered. If any link in the chain (scan →
+			// bean → builder.entity → EntityFieldsFeature) is broken, the
+			// query won't compile and this test fails loudly.
+			StarterEntityDAO dao = ctx.getBean(StarterEntityDAO.class);
+			dao.dropTable();
+			dao.createTable();
+
+			StarterEntity first = new StarterEntity();
+			first.setId(1);
+			first.setName("alpha");
+			dao.insert(first);
+
+			StarterEntity second = new StarterEntity();
+			second.setId(2);
+			second.setName("beta");
+			dao.insert(second);
+
+			List<StarterEntity> all = dao.findAll();
+			assertThat(all)
+					.extracting(StarterEntity::getId, StarterEntity::getName)
+					.containsExactly(
+							tuple(1, "alpha"),
+							tuple(2, "beta"));
+
+			// Exercise the columnAndValue template via the update query.
+			first.setName("alpha-renamed");
+			dao.update(first);
+			assertThat(dao.findAll())
+					.extracting(StarterEntity::getId, StarterEntity::getName)
+					.containsExactly(
+							tuple(1, "alpha-renamed"),
+							tuple(2, "beta"));
+		} finally {
+			ctx.close();
 		}
 	}
 
