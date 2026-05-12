@@ -1,514 +1,383 @@
-# Jaregu-queries
+# Jaregu Queries
 
-[![Build Status](https://travis-ci.org/jaregu/queries.svg?branch=master)](https://travis-ci.org/jaregu/queries)
+[![CI](https://github.com/jaregu/queries/actions/workflows/ci.yml/badge.svg)](https://github.com/jaregu/queries/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.jaregu/queries.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/com.jaregu/queries)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Java based SQL templating project. Store your queries in sql files and build queries for executing.
-Main features:
-- SQL templating with conditional blocks
-- Built-in expression language for simple parameter conditions and tuning (parameter + '%')
-- Mandatory and optional parameter support
-- Anonymous, constant or named parameter naming support (use field = ? or field = 'AAA' or field = :aaa syntax)
-- Optional SQL IN clause support
-- SQL Dialects for built-in SQL query conversion to COUNT, ORDER BY and LIMIT queries
-- SQL Dialects for overridable query source SQL files (aaa/bbb.sql and aaa/bbb.mariadb.sql for same query source)
-- Proxiable interfaces support (use interface with annotations to create bridge between sql file and java code, unleash easy binding with DI)
-- DI supported (Optional [Guice](https://github.com/google/guice) support included)
-- Pluggable execution layer: optional [Dalesbred](https://dalesbred.org/) integration, optional [Spring JdbcClient](https://docs.spring.io/spring-framework/reference/data-access/jdbc/client.html) integration, optional [HikariCP](https://github.com/brettwooldridge/HikariCP) sql datasource wrapper
-- Spring Boot ready: optional `queries-spring-boot-starter` auto-wires Queries on top of Spring Boot's `DataSource`
-- Java 17 records work as both query parameters and result rows
-- Conversion support for queries (Proxied interface can return data from database using some defined coversion)
-- Optional queries caching possibility (Optional [Caffeine](https://github.com/ben-manes/caffeine) cache wrapper included)
-- Query attributes support for executing, caching or some other layer (additional info about query)
-- Only one required dependence [slf4j](http://www.slf4j.org/)
+> **SQL templating for Java.** Keep your SQL in `.sql` files. Bind parameters by name. Drop unused `WHERE` clauses with one inline comment. Let a typed interface stand in for the boilerplate.
 
-# Quick-start (With DI - Guice)
-
-Add project dependencies (in build.gradle):
-``` groovy
-  dependencies {
-    
-    // Jaregu Queries
-    implementation 'com.jaregu:queries:1.+'
-    // DI Guice
-    implementation 'com.google.inject:guice:4.+'
-    //  HSQLDB in memory database for testing
-    implementation 'org.hsqldb:hsqldb:2.+'
-    // SQL datasource pool
-    implementation 'com.zaxxer:HikariCP:3.+'
-    // Execute layer 
-    implementation 'org.dalesbred:dalesbred:+'
-    
-    // Lombok for POJOs on steroids
-    annotationProcessor 'org.projectlombok:lombok:1.+'
-    compileOnly 'org.projectlombok:lombok:1.+'
-    
-  }
-```
-
-We create Job.java file:
-```java
-package jaregu.queries.di.example;
-
-import java.time.Instant;
-
-import com.jaregu.database.queries.annotation.Column;
-import com.jaregu.database.queries.annotation.Table;
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.With;
-
-@Table(name = "job")
-@Data
-@Builder(toBuilder = true)
-@NoArgsConstructor
-@AllArgsConstructor
-@With
-public class Job {
-
-	@Column(name = "id")
-	private Integer id;
-	@Column(name = "name")
-	private String name;
-	@Column(name = "short_description")
-	private String shortDescription;
-	@Column(name = "version")
-	private Integer version;
-	@Column(name = "created")
-	private Instant created;
-	@Column(name = "modified")
-	private Instant modified;
-}
-```
-And simple IdName.java just to demonstrate some other select
-```java
-package jaregu.queries.di.example;
-
-import lombok.AllArgsConstructor;
-import lombok.Value;
-
-@Value
-@AllArgsConstructor
-public class IdName {
-
-	private Integer id;
-	private String name;
-}
-```
-
-Search support class looks like:
-```java
-package jaregu.queries.di.example;
-
-import java.util.Collections;
-import java.util.List;
-
-import com.jaregu.database.queries.ext.OrderableSearch;
-import com.jaregu.database.queries.ext.PageableSearch;
-
-import lombok.Builder;
-import lombok.Value;
-import lombok.With;
-import lombok.Builder.Default;
-
-@Value
-@Builder
-@With
-public class JobsSearch implements OrderableSearch<JobsSearch>, PageableSearch<JobsSearch> {
-
-	private Integer limit;
-	private Integer offset;
-	@Default
-	private List<String> orderBy = Collections.emptyList();
-
-	private Integer id;
-	private String name;
-
-	public static JobsSearch byId(Integer id) {
-		return builder().id(id).build();
-	}
-
-	public static JobsSearch byName(String name) {
-		return builder().name(name).build();
-	}
-
-	public static JobsSearch all() {
-		return builder().build();
-	}
-}
-```
-
-Main job SQL file src/main/java/jaregu/queries/di/example/JobDAO.sql:
 ```sql
--- create
-CREATE TABLE job
-(
-    id int NOT NULL,
-    name varchar(50) NOT NULL,
-    short_description varchar(500),
-    version integer NOT NULL,
-    created timestamp NOT NULL,
-    modified timestamp NOT NULL,
-    
-    CONSTRAINT job_pkey PRIMARY KEY (id)
-);
-
--- insert
-INSERT INTO job	(/* entityFieldGenerator(template = 'column' entityClass = 'Job' excludeColumns = 'version, created, modified') */
-	 ,version, created, modified)
-VALUES
-	(/* entityFieldGenerator(template = 'value' entityClass = 'Job' excludeColumns = 'version, created, modified') */
-	, 1, NOW(), NOW())
-;
-
--- update
-UPDATE job
-SET
-	-- entityFieldGenerator(template = 'columnAndValue' entityClass = 'Job' excludeColumns = 'id, version, created, modified')
-	,version = version + 1
-	,modified = NOW()
-WHERE id = :id
-	AND version = :version
-;
-
--- delete
-DELETE FROM job
-WHERE id = :id;
-
--- search_entities
-SELECT -- entityFieldGenerator(template = 'column' entityClass = 'Job' alias = 'j')
-FROM job j
+-- search_jobs
+SELECT id, name FROM job
 WHERE 1 = 1
-	AND j.id = 1 -- :id
-	AND j.name LIKE '%' /* '%' + :name + '%'; :name != null && :name != '' */
-;
-
--- search_special
-SELECT j.id 
-	,j.name
-FROM job j	
-WHERE 1 = 1
-	AND j.id = 1 -- :id
-	AND j.name LIKE '%' /* '%' + :name + '%'; :name != null && :name != '' */
-;
+    AND name LIKE '%' /* '%' + :name + '%'; :name != null && :name != '' */
+    AND id = 1        -- :id
+ORDER BY id DESC
+LIMIT :offset, :limit
 ```
 
-We create interface for bridging this SQL file to java JobDAO.java:
 ```java
-package jaregu.queries.di.example;
-
-import java.util.List;
-import java.util.Optional;
-
-import com.jaregu.database.queries.proxy.ExecuteUpdate;
-import com.jaregu.database.queries.proxy.FindAll;
-import com.jaregu.database.queries.proxy.FindOptional;
-import com.jaregu.database.queries.proxy.FindUnique;
-import com.jaregu.database.queries.proxy.QueriesSourceClass;
-import com.jaregu.database.queries.proxy.QueryParam;
-import com.jaregu.database.queries.proxy.QueryRef;
-
 @QueriesSourceClass
 public interface JobDAO {
 
-	@QueryRef("create")
-	@ExecuteUpdate
-	void create();
-
-	@QueryRef("insert")
-	@ExecuteUpdate(unique = true)
-	void insert(Job job);
-
-	@QueryRef("update")
-	@ExecuteUpdate(unique = true)
-	void update(Job job);
-
-	@QueryRef("delete")
-	@ExecuteUpdate(unique = true)
-	void delete(@QueryParam("id") Integer id);
-
-	@QueryRef(value = "search_entities")
-	@FindOptional(Job.class)
-	Optional<Job> findEntity(JobsSearch search);
-
-	@QueryRef(value = "search_entities")
-	@FindUnique(Job.class)
-	Job getEntity(JobsSearch search);
-
-	@QueryRef(value = "search_entities", toSorted = true, toPaged = true)
-	@FindAll(Job.class)
-	List<Job> searchEntities(JobsSearch search);
-
-	@QueryRef(value = "search_special", toSorted = true, toPaged = true)
-	@FindAll(IdName.class)
-	List<IdName> searchSpecial(JobsSearch search);
-
-	@QueryRef(value = "search_special", toCount = true)
-	@FindUnique(Integer.class)
-	Integer getRowCount(JobsSearch search);
-}
-```
-Our app startup looks like:
-```java
-package jaregu.queries.di.example;
-
-import org.hsqldb.server.Server;
-
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.jaregu.database.queries.ext.dalesbred.DalesbredModule;
-import com.jaregu.database.queries.ext.guice.QueriesModule;
-import com.jaregu.database.queries.ext.hikari.HikariIntegration;
-import com.jaregu.database.queries.ext.hikari.HikariModule;
-import com.zaxxer.hikari.HikariConfig;
-
-public class App {
-
-	public static void main(String[] args) {
-
-		Server server = createHSQLServer();
-		ConnectionPool connectionPool = new ConnectionPool();
-
-		Injector injector = Guice.createInjector(
-				QueriesModule.queriesModule(),
-				DalesbredModule.create(),
-				HikariModule.create(connectionPool),
-				QueriesModule.proxyModule(JobDAO.class),
-				QueriesModule.entityModule(Job.class));
-
-		// This is the place where we call our main code
-		injector.getInstance(Jobs.class).test();
-
-		connectionPool.shutDown();
-		server.stop();
-	}
-
-	private static Server createHSQLServer() {
-		Server server = new Server();
-		server.setSilent(true);
-		server.setDatabaseName(0, "mainDb");
-		server.setDatabasePath(0, "mem:mainDb");
-		server.setPort(9001);
-		server.start();
-		return server;
-	}
-
-	private static class ConnectionPool implements HikariIntegration {
-
-		private ShutdownHook hook;
-
-		@Override
-		public HikariConfig getConfig() {
-			HikariConfig config = new HikariConfig();
-			config.setJdbcUrl("jdbc:hsqldb:hsql://localhost:9001/mainDb");
-			config.setUsername("SA");
-			config.setPassword("");
-			config.setAutoCommit(false);
-			return config;
-		}
-
-		@Override
-		public void registerShudownHook(ShutdownHook hook) {
-			this.hook = hook;
-		}
-
-		public void shutDown() {
-			this.hook.shutDown();
-		}
-	}
+    @QueryRef("search_jobs") @FindAll(Job.class)
+    List<Job> search(JobsSearch search);
 }
 ```
 
-This is our main code place for this example Jobs.java :
-```java
-package jaregu.queries.di.example;
+That's it. The conditional in `/* ... */` drops out when `name` is null or empty. The `-- :id` rewrites the literal `1` to a bound parameter. No JPQL, no DSL, no string-building.
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+---
 
-@Singleton
-public class Jobs {
+## Why
 
-	private JobDAO dao;
+The Java ecosystem has a gap between **"raw `JdbcClient` everywhere"** (painful at scale) and **"full ORM with magic"** (heavy, opinionated). Jaregu Queries lives there.
 
-	@Inject
-	Jobs(JobDAO dao) {
-		this.dao = dao;
-	}
+- **External `.sql` files** — your DBA can read them, your IDE highlights them, your DB tooling validates them.
+- **Conditional SQL** — `/* ... */` and `-- ...` comments mark optional clauses driven by parameter expressions, so one query handles many filter combinations without dynamic string concat.
+- **Typed proxy DAOs** — declare an interface, annotate methods with `@QueryRef`, let the library wire the SQL to your beans.
+- **Pluggable execution layer** — works with Spring's `JdbcClient`, Dalesbred, or roll your own.
+- **One transitive dependency** — `slf4j-api`. Every integration (Spring, Guice, Hikari, Caffeine, Dalesbred) is `compileOnly` — you pay only for what you import.
 
-	void test() {
-		// table creation
-		dao.create();
+If you like writing SQL but hate writing `PreparedStatement` plumbing, this is for you.
 
-		// inserting first record
-		dao.insert(Job.builder()
-				.id(1)
-				.name("first")
-				.shortDescription("some description")
-				.build());
+---
 
-		// inserting second record
-		dao.insert(Job.builder()
-				.id(2)
-				.name("second")
-				.build());
+## Requirements
 
-		// output: [Job(id=1, name=first, shortDescription=some description, version=1, created=2020-08-25T21:04:40.047Z, modified=2020-08-25T21:04:40.047Z)]
-		System.out.println(dao.searchEntities(JobsSearch.byId(1)));
+| | Version |
+|---|---|
+| **Java runtime** | **17+** (tested on JDK 17 and 21) |
+| **Spring Boot starter** | requires Spring Boot **4.0+** (which bundles Spring Framework **7.0+**) |
+| **Plain Spring (no starter)** | Spring Framework **7.0+** with `JdbcClient` (Spring 6.1+ technically works, but the starter requires 7) |
+| **Guice integration** | Guice **7.0+** (Jakarta packages) |
+| **HikariCP integration** | HikariCP **7.0+** |
+| **Dalesbred integration** | Dalesbred **1.3.6+** |
 
-		// output: [Job(id=1, name=first, shortDescription=some description, version=1, created=2020-08-25T21:04:40.047Z, modified=2020-08-25T21:04:40.047Z), Job(id=2, name=second, shortDescription=null, version=1, created=2020-08-25T21:04:40.054Z, modified=2020-08-25T21:04:40.054Z)]
-		System.out.println(dao.searchEntities(JobsSearch.all()));
+Jaregu Queries 2.x is fully on Jakarta EE — `jakarta.*` packages, no legacy `javax.*`.
 
-		// output: 2
-		System.out.println(dao.getRowCount(JobsSearch.all()));
+For Java 11 + Spring Boot 3.x compatibility, stay on Jaregu Queries **1.4.x**.
 
-		// output: [IdName(id=1, name=first), IdName(id=2, name=second)]
-		System.out.println(dao.searchSpecial(JobsSearch.all()));
+---
 
-		// output: [IdName(id=2, name=second)]
-		System.out.println(dao.searchSpecial(JobsSearch.byName("se")));
-
-		// deleting first record
-		dao.delete(1);
-
-		// output: [IdName(id=2, name=second)]
-		System.out.println(dao.searchSpecial(JobsSearch.all()));
-
-	}
-}
-```
-
-# Quick-start (Spring Boot)
+## Quick-start — Spring Boot
 
 Add the starter:
-``` groovy
+
+```groovy
 dependencies {
-    implementation 'com.jaregu:queries-spring-boot-starter:2.+'
+    implementation 'com.jaregu:queries-spring-boot-starter:2.0.0'
     runtimeOnly 'org.hsqldb:hsqldb'   // or your favourite JDBC driver
 }
 ```
 
-Declare the same `JobDAO.sql` and `Job` record/POJO as in the Guice example above, plus the same `@QueriesSourceClass` DAO interface — the annotations (`@QueryRef`, `@ExecuteUpdate`, `@FindAll`, `@FindOptional`, `@FindUnique`) carry over unchanged. The only thing the Spring Boot world changes is the wiring:
+Configure your DataSource in `application.properties` the usual way:
+
+```properties
+spring.datasource.url=jdbc:hsqldb:mem:demo
+spring.datasource.username=SA
+```
+
+### 1. The entity
+
+```java
+@Table(name = "job")
+@Data @NoArgsConstructor @AllArgsConstructor @Builder(toBuilder = true)
+public class Job {
+
+    // @Column is read in BOTH directions: by the entityFieldGenerator SQL
+    // macro AND by the result-row mapper. So columns named
+    // `usr_first_nm` ↔ `firstName` work out of the box — no convention
+    // required between SQL and Java naming.
+    @Column(name = "id")                private Integer id;
+    @Column(name = "name")              private String name;
+    @Column(name = "short_description") private String shortDescription;
+    @Column(name = "version")           private Integer version;
+    @Column(name = "created")           private Instant created;
+    @Column(name = "modified")          private Instant modified;
+}
+```
+
+Records work too — Jaregu Queries handles both Java 17 records and JavaBeans, and falls back to snake_case → camelCase for any column without an explicit `@Column`.
+
+### 2. The SQL — `JobDAO.sql` (next to `JobDAO.java`)
+
+```sql
+-- create
+CREATE TABLE job (
+    id int NOT NULL PRIMARY KEY,
+    name varchar(50) NOT NULL,
+    short_description varchar(500),
+    version integer NOT NULL,
+    created timestamp NOT NULL,
+    modified timestamp NOT NULL
+);
+
+-- insert
+INSERT INTO job (/* entityFieldGenerator(template = 'column' entityClass = 'Job' excludeColumns = 'version, created, modified') */
+    , version, created, modified)
+VALUES (/* entityFieldGenerator(template = 'value' entityClass = 'Job' excludeColumns = 'version, created, modified') */
+    , 1, NOW(), NOW());
+
+-- update
+UPDATE job SET
+    -- entityFieldGenerator(template = 'columnAndValue' entityClass = 'Job' excludeColumns = 'id, version, created, modified')
+    , version = version + 1
+    , modified = NOW()
+WHERE id = :id AND version = :version;
+
+-- search
+SELECT -- entityFieldGenerator(template = 'column' entityClass = 'Job' alias = 'j')
+FROM job j
+WHERE 1 = 1
+    AND j.id = 1                                                    -- :id
+    AND j.name LIKE '%' /* '%' + :name + '%'; :name != null && :name != '' */
+```
+
+### 3. The DAO interface
+
+```java
+@QueriesSourceClass
+public interface JobDAO {
+
+    @QueryRef("create") @ExecuteUpdate
+    void createTable();
+
+    @QueryRef("insert") @ExecuteUpdate(unique = true)
+    void insert(Job job);
+
+    @QueryRef("update") @ExecuteUpdate(unique = true)
+    void update(Job job);
+
+    @QueryRef(value = "search", toSorted = true, toPaged = true)
+    @FindAll(Job.class)
+    List<Job> search(JobsSearch search);
+
+    @QueryRef(value = "search") @FindOptional(Job.class)
+    Optional<Job> findOne(JobsSearch search);
+}
+```
+
+### 4. Wire it
 
 ```java
 @SpringBootApplication
 @QueriesScan(basePackageClasses = JobDAO.class)
 public class App {
-    public static void main(String[] args) {
-        SpringApplication.run(App.class, args);
-    }
+    public static void main(String[] args) { SpringApplication.run(App.class, args); }
 }
 ```
 
-The starter then provides:
+`@QueriesScan` accepts either:
 
-- a `JdbcClient` bean on top of Spring Boot's auto-configured `DataSource`
-- a `Queries` bean with the four Spring-backed mapper factories pre-installed
-- a Spring bean for every `@QueriesSourceClass`-annotated interface found under the scanned packages, so DAOs are `@Autowired` directly
-- a `QueriesEntity` bean for every `@Table`-annotated class found under the scanned packages, so the `entityFieldGenerator(...)` SQL macro works without manual registration
+- `basePackageClasses = { JobDAO.class }` — type-safe, refactor-resistant
+- `basePackages = { "com.example.dao" }` — string-based package names
+- both omitted → scans the package of the annotated class (and subpackages)
 
-Need an entity with a non-default alias? Drop a `QueriesEntity` `@Bean` in your config:
+It scans for:
 
-```java
-@Bean QueriesEntity jobEntity() { return QueriesEntity.of(Job.class, "j"); }
-```
+- **`@QueriesSourceClass` interfaces** → registered as proxy beans + their backing `QueriesSource`
+- **`@Table` classes** → registered as `QueriesEntity` beans so the `entityFieldGenerator` SQL macro can find them
+
+### 5. Use it
 
 ```java
 @Service
+@RequiredArgsConstructor
 public class Jobs {
 
     private final JobDAO dao;
 
-    public Jobs(JobDAO dao) {
-        this.dao = dao;
-    }
-
     @Transactional
-    public void createTable() {
-        dao.create();
+    public void seed() {
+        dao.insert(Job.builder().id(1).name("first").build());
+        dao.insert(Job.builder().id(2).name("second").build());
+    }
+
+    public List<Job> findByName(String name, int offset, int limit) {
+        return dao.search(JobsSearch.builder()
+                .name(name)
+                .offset(offset)
+                .limit(limit)
+                .orderBy(List.of("name asc"))
+                .build());
     }
 }
 ```
 
-Transactions: use Spring's `@Transactional` on your service methods — `JdbcClient` participates in the active transaction automatically.
+Spring's `@Transactional` works transparently — `JdbcClient` participates in the active transaction via Spring's `DataSourceUtils`.
 
-Tuning the builder (dialect, cache, custom mappers, entities): publish one or more `QueriesConfigurator` beans — the same functional interface used by the Guice integration, so configurators are portable between both worlds:
+---
+
+## Pagination and sorting
+
+Have your search class implement `OrderableSearch` and `PageableSearch`:
 
 ```java
-@Bean
-QueriesConfigurator mysqlDialect() {
-    return b -> b.dialect(Dialects.mysql());
+@Value @Builder @With
+public class JobsSearch implements OrderableSearch<JobsSearch>, PageableSearch<JobsSearch> {
+
+    private Integer id;
+    private String name;
+
+    private Integer limit;
+    private Integer offset;
+    @Default private List<String> orderBy = List.of();
 }
 ```
 
-For plain Spring (non-Boot) projects, do the wiring by hand with `SpringQueriesMappers`:
+Then mark the DAO method with `toSorted = true` and/or `toPaged = true`:
 
 ```java
-@Bean
-Queries queries(JdbcClient jdbc, List<QueriesSource> sources) {
-    Queries.Builder b = Queries.builder();
-    sources.forEach(b::source);
-    return SpringQueriesMappers.register(b, jdbc).build();
+@QueryRef(value = "search", toSorted = true, toPaged = true)
+@FindAll(Job.class)
+List<Job> search(JobsSearch search);
+```
+
+The library wraps your SQL with the dialect's `ORDER BY ... LIMIT ? OFFSET ?` template. Default dialect emits `LIMIT ? OFFSET ?` (works in HSQL, MySQL, PostgreSQL). Pick a different dialect via a `QueriesConfigurator` bean — see [Customization](#customization).
+
+---
+
+## Tuning the builder
+
+Drop a `QueriesConfigurator` bean for anything you'd normally set on `Queries.Builder`:
+
+```java
+@Bean QueriesConfigurator pgDialect() {
+    return b -> b.dialect(Dialects.postgreSQL());
+}
+
+@Bean QueriesConfigurator cache() {
+    return b -> b.cache(CaffeineCache.forSize(1000));
 }
 ```
 
-# Quick-start (Without DI)
+For entities with a non-default SQL alias:
 
-Create some sql file aaa/bbb/dummy.sql:
-``` sql
--- create-dummy
-create table dummy (
-id int, 
-foo int, 
-bar varchar(100),
-PRIMARY KEY (id));
-
--- insert-dummy
-insert into dummy (id, foo, bar) values (:id, :foo, :bar);
-
--- search-example
-select *
-from dummy
-where 1 = 1
--- all criterions will be added if value will be non empty string
-and (LOWER(bar) = LOWER('THIS will be replaced' /* :barEq ; :barEq != null && :barEq != '' */) 
-and (bar like null /* :barStarts + '%'; :barStarts != null && :barStarts != '' */)
-and (bar like '%foo%' /* '%' + :barContains + '%'; :barContains != null && :barContains != '' */)
-order by id desc
-limit :offset, :limit -- both offset and limit parameters are mandatory, so they have to be supplied
-;
-
-```
-Create Queries instance
 ```java
-Queries queries = Queries.builder().sourceOfResource("aaa/bbb/dummy.sql").build();
-```
-
-And build some queries:
-```java
-Query query = queries.get(QueryId.of("aaa.bbb.dummy.create-dummy")).build();
-execute(query); // execute method is sql executing layer not showed here
-```
-
-Create some POJO
-```java
-public class Dummy {
-  public int id;
-  public Integer foo;
-  public String bar;
+@Bean QueriesEntity jobEntity() {
+    return QueriesEntity.of(Job.class, "j");
 }
 ```
 
-Use POJO for inserts statement
+<a id="customization"></a>
+
+---
+
+## Beyond Spring Boot
+
+The `queries` JAR works the same in any container. The starter is just convenient wiring.
+
+### Plain Spring (non-Boot)
+
 ```java
-PreparedQuery query = queries.get(QueryId.of("aaa.bbb.dummy.create-dummy"));
-Dummy dummy = new Dummy();
-dummy.id = 1;
-//set some other fields
-execute(query.build(dummy)); // execute method is sql executing layer
-dummy.id = 2;
-execute(query.build(dummy));
+@Configuration
+@QueriesScan(basePackageClasses = JobDAO.class) // optional, or @Bean each DAO manually
+public class QueriesConfig {
+
+    @Bean JdbcClient jdbcClient(DataSource ds) { return JdbcClient.create(ds); }
+
+    @Bean
+    Queries queries(JdbcClient jdbc, List<QueriesSource> sources) {
+        var b = Queries.builder();
+        sources.forEach(b::source);
+        return SpringQueriesMappers.register(b, jdbc).build();
+    }
+}
 ```
-See example for more in depth features: [sample-queries.sql](https://github.com/jaregu/queries/blob/master/src/example/resources/com/jaregu/queries/example/sample-queries.sql) [SampleQueries.java](https://github.com/jaregu/queries/blob/master/src/example/java/com/jaregu/queries/example/SampleQueries.java)
+
+### Guice
+
+```groovy
+implementation 'com.jaregu:queries:2.0.0'
+implementation 'com.google.inject:guice:7.+'
+implementation 'org.dalesbred:dalesbred:1.3.+'   // or wire SpringQueriesMappers
+implementation 'com.zaxxer:HikariCP:7.+'
+```
+
+```java
+Injector injector = Guice.createInjector(
+        QueriesModule.queriesModule(),
+        DalesbredModule.create(),
+        HikariModule.create(myConnectionPoolConfig),
+        QueriesModule.proxyModule(JobDAO.class),
+        QueriesModule.entityModule(Job.class));
+
+JobDAO dao = injector.getInstance(JobDAO.class);
+```
+
+### No DI
+
+```java
+Queries queries = Queries.builder()
+        .sourceOfClass(JobDAO.class)
+        .entity(Job.class)
+        .build();
+
+JobDAO dao = queries.proxy(JobDAO.class);
+```
+
+You still need *something* to execute the resulting `Query` objects — call `Queries.builder().mapper(...)` to register your own factory, or use one of the bundled integrations (`SpringQueriesMappers`, `DalesbredModule`).
+
+---
+
+## SQL templating reference
+
+### Conditional clauses
+
+The full form is a two-part comment: `replacement; condition`. Replacement only happens when the condition is true. Otherwise the original `WHERE` term stays.
+
+```sql
+AND j.name LIKE '%foo%' /* '%' + :name + '%'; :name != null && :name != '' */
+```
+
+A single-line comment after a literal value rewrites that literal to a parameter:
+
+```sql
+AND j.id = 1   -- :id
+```
+
+### IN clauses (collection binding)
+
+Bind a collection or array as a single parameter — the binder expands it:
+
+```sql
+AND j.status IN (:statuses)
+```
+
+### Entity field generation
+
+Generate column lists from your `@Table` / `@Column`-annotated entity at compile time:
+
+```sql
+-- column list with optional table alias
+SELECT /* entityFieldGenerator(template = 'column' entityClass = 'Job' alias = 'j') */
+FROM job j
+
+-- ':named, :params' for INSERT VALUES
+VALUES (/* entityFieldGenerator(template = 'value' entityClass = 'Job') */)
+
+-- 'col = :col, col2 = :col2' for UPDATE SET
+SET -- entityFieldGenerator(template = 'columnAndValue' entityClass = 'Job' excludeColumns = 'id')
+```
+
+Templates: `column`, `value`, `columnAndValue`. Options: `entityClass`, `alias`, `excludeColumns`.
+
+---
+
+## Versioning
+
+Versions come from git tags via [Reckon](https://github.com/ajoberstar/reckon). To cut release 2.1.0, tag and push:
+
+```bash
+git tag v2.1.0
+git push origin v2.1.0
+```
+
+GitHub Actions builds, signs, and publishes to Maven Central automatically. Every push to `master` between releases publishes a `<next>-SNAPSHOT` to the snapshot repo at `https://central.sonatype.com/repository/maven-snapshots/`.
+
+---
+
+## License
+
+[Apache License 2.0](LICENSE.md).
