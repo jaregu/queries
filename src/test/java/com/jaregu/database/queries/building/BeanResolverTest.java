@@ -44,6 +44,68 @@ public class BeanResolverTest {
 		assertThatThrownBy(() -> resolver.getValue("ddd.notVisible")).isInstanceOf(QueryBuildException.class);
 	}
 
+	@Test
+	public void testRecordStyleAccessor() {
+		// Java 17 records expose components via `name()` accessors with no
+		// get/is prefix. BeanResolver must resolve them.
+		BeanResolver resolver = new BeanResolver(new SomeRecord(1, "alpha", null));
+		assertThat(resolver.getValue("id")).isEqualTo(1);
+		assertThat(resolver.getValue("label")).isEqualTo("alpha");
+		assertThat(resolver.getValue("nested")).isNull();
+		assertThatThrownBy(() -> resolver.getValue("missing")).isInstanceOf(QueryBuildException.class);
+	}
+
+	@Test
+	public void testNestedRecordAccess() {
+		SomeRecord inner = new SomeRecord(2, "inner", null);
+		SomeRecord outer = new SomeRecord(1, "outer", inner);
+		BeanResolver resolver = new BeanResolver(outer);
+		assertThat(resolver.getValue("nested.id")).isEqualTo(2);
+		assertThat(resolver.getValue("nested.label")).isEqualTo("inner");
+	}
+
+	@Test
+	public void testRepeatedLookupsAreStable() {
+		// Each getValue() call must return the live value of the underlying
+		// bean — caching of reflection metadata must not freeze the value.
+		MutableBean bean = new MutableBean();
+		BeanResolver resolver = new BeanResolver(bean);
+		bean.setCounter(1);
+		assertThat(resolver.getValue("counter")).isEqualTo(1);
+		bean.setCounter(2);
+		assertThat(resolver.getValue("counter")).isEqualTo(2);
+		bean.setCounter(99);
+		assertThat(resolver.getValue("counter")).isEqualTo(99);
+	}
+
+	@Test
+	public void testInheritedGetterIsResolved() {
+		BeanResolver resolver = new BeanResolver(new SubBean());
+		assertThat(resolver.getValue("aaa")).isEqualTo(123);
+		assertThat(resolver.getValue("subOnly")).isEqualTo("sub-value");
+	}
+
+	public record SomeRecord(Integer id, String label, SomeRecord nested) {
+	}
+
+	public static class MutableBean {
+		private int counter;
+
+		public int getCounter() {
+			return counter;
+		}
+
+		public void setCounter(int counter) {
+			this.counter = counter;
+		}
+	}
+
+	public static class SubBean extends SomeBase {
+		public String getSubOnly() {
+			return "sub-value";
+		}
+	}
+
 	public interface SomeFooBarInterface {
 
 		public String getFoo();
