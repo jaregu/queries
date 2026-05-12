@@ -1,7 +1,8 @@
 package com.jaregu.database.queries.parsing;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -10,27 +11,30 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class QueriesParserImplTest {
 
 	final private static SourceId SOURCE_ID = SourceId.ofId("some.source.id");
 
 	private QueriesParserImpl parser = new QueriesParserImpl(null);
 
-	@Test(expected = QueryParseException.class)
-	public void testNoCommentParse() throws Exception {
+	@Test
+	public void testNoCommentParse() {
 		QueriesSource source = mock(QueriesSource.class);
 		when(source.getId()).thenReturn(SOURCE_ID);
 		when(source.readContent(Mockito.any())).thenReturn("some simple content");
-		parser.parse(source);
+		assertThrows(QueryParseException.class, () -> parser.parse(source));
 	}
 
 	@Test

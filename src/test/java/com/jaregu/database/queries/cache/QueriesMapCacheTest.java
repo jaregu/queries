@@ -1,7 +1,7 @@
 package com.jaregu.database.queries.cache;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,18 +13,21 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.jaregu.database.queries.QueryId;
 import com.jaregu.database.queries.SourceId;
 import com.jaregu.database.queries.compiling.PreparedQuery;
 import com.jaregu.database.queries.parsing.ParsedQueries;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class QueriesMapCacheTest {
 
 	private QueriesMapCache cache = new QueriesMapCache();
@@ -47,7 +50,7 @@ public class QueriesMapCacheTest {
 	@Mock
 	private PreparedQuery compiledQuery3;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 
 	}

@@ -4,14 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class BindersTest {
 
 	private TestBinders binders;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		binders = new TestBinders();
 	}

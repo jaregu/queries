@@ -2,7 +2,7 @@ package com.jaregu.database.queries.ext;
 
 import static org.assertj.core.api.Assertions.*;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class PageableSearchDefaultMethodsTest {
 

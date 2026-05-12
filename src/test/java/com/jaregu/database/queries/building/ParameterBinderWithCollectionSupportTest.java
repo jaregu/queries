@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.function.Function;
 
 import org.assertj.core.util.Sets;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.jaregu.database.queries.building.ParameterBinder.Result;
 import com.jaregu.database.queries.building.ParameterBinderWithCollectionSupport.Builder;

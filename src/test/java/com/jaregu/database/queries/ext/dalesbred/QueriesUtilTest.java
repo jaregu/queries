@@ -10,7 +10,7 @@ import java.util.UUID;
 
 import org.dalesbred.datatype.SqlArray;
 import org.dalesbred.query.SqlQuery;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.jaregu.database.queries.building.Query;
 import com.jaregu.database.queries.building.QueryImpl;

@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.jaregu.database.queries.annotation.Column;
 import com.jaregu.database.queries.annotation.Table;

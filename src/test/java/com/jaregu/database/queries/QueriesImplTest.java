@@ -14,12 +14,14 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.jaregu.database.queries.cache.QueriesCache;
 import com.jaregu.database.queries.compiling.PreparedQuery;
@@ -31,7 +33,8 @@ import com.jaregu.database.queries.parsing.QueriesSource;
 import com.jaregu.database.queries.parsing.QueriesSources;
 import com.jaregu.database.queries.proxy.QueriesInvocationHandler;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class QueriesImplTest {
 
 	@InjectMocks
@@ -92,7 +95,7 @@ public class QueriesImplTest {
 	@Mock
 	private PreparedQuery preparedQuery21;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		when(sources.getSources()).thenReturn(Arrays.asList(source1, source2));
 		when(source1.getId()).thenReturn(source1Id);

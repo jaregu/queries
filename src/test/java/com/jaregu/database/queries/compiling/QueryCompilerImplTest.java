@@ -1,6 +1,6 @@
 package com.jaregu.database.queries.compiling;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -13,12 +13,14 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.jaregu.database.queries.QueriesConfig;
 import com.jaregu.database.queries.QueryId;
@@ -30,7 +32,8 @@ import com.jaregu.database.queries.dialect.Dialects;
 import com.jaregu.database.queries.parsing.ParsedQuery;
 import com.jaregu.database.queries.parsing.ParsedQueryPart;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class QueryCompilerImplTest {
 
 	private QueryId goodFood = QueryId.of("good.food");
@@ -38,7 +41,7 @@ public class QueryCompilerImplTest {
 	@Mock(answer = Answers.RETURNS_MOCKS)
 	private QueriesConfig interior;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 	}
 

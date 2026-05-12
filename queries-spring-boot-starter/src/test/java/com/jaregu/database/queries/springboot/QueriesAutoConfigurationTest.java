@@ -1,20 +1,29 @@
 package com.jaregu.database.queries.springboot;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.List;
 
+import javax.sql.DataSource;
+
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.jaregu.database.queries.Queries;
 import com.jaregu.database.queries.QueriesConfigurator;
+import com.jaregu.database.queries.parsing.QueriesSource;
 
 /**
  * End-to-end check that:
@@ -264,5 +273,166 @@ class QueriesAutoConfigurationTest {
 		public void configure(Queries.Builder builder) {
 			invoked = true;
 		}
+	}
+
+	// ------------------------------------------------------------------
+	// Q1 hardening tests
+	// ------------------------------------------------------------------
+
+	@Test
+	void springTransactionalRollsBackInsertOnException() {
+		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(TransactionalApp.class)
+				.web(WebApplicationType.NONE)
+				.properties(
+						"spring.datasource.url=jdbc:hsqldb:mem:starter-tx-test",
+						"spring.datasource.username=SA",
+						"spring.datasource.password=",
+						"spring.datasource.driver-class-name=org.hsqldb.jdbc.JDBCDriver")
+				.run();
+		try {
+			StarterTestDAO dao = ctx.getBean(StarterTestDAO.class);
+			TransactionalService service = ctx.getBean(TransactionalService.class);
+
+			dao.createTable();
+			assertThat(dao.count()).isEqualTo(0);
+
+			// The service inserts a row then throws — Spring's @Transactional
+			// must roll the connection back so JdbcClient (which participates
+			// in the active transaction via DataSourceUtils) leaves no trace.
+			assertThatThrownBy(() -> service.insertThenFail(new StarterItem(1, "rollback-me")))
+					.isInstanceOf(IllegalStateException.class);
+
+			assertThat(dao.count())
+					.as("row inserted before the exception must have been rolled back")
+					.isEqualTo(0);
+
+			// Sanity: a non-throwing transactional call commits.
+			service.insertThenCommit(new StarterItem(2, "commit-me"));
+			assertThat(dao.count()).isEqualTo(1);
+		} finally {
+			ctx.close();
+		}
+	}
+
+	@SpringBootApplication
+	@QueriesScan(basePackageClasses = StarterTestDAO.class)
+	static class TransactionalApp {
+
+		@Bean
+		TransactionalService transactionalService(StarterTestDAO dao) {
+			return new TransactionalService(dao);
+		}
+	}
+
+	@Service
+	static class TransactionalService {
+
+		private final StarterTestDAO dao;
+
+		TransactionalService(StarterTestDAO dao) {
+			this.dao = dao;
+		}
+
+		@Transactional
+		public void insertThenFail(StarterItem item) {
+			dao.insert(item);
+			throw new IllegalStateException("forced rollback");
+		}
+
+		@Transactional
+		public void insertThenCommit(StarterItem item) {
+			dao.insert(item);
+		}
+	}
+
+	@Test
+	void userDefinedQueriesBeanOverridesAutoConfig() {
+		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(UserQueriesApp.class)
+				.web(WebApplicationType.NONE)
+				.properties(
+						"spring.datasource.url=jdbc:hsqldb:mem:starter-user-queries-test",
+						"spring.datasource.username=SA",
+						"spring.datasource.password=",
+						"spring.datasource.driver-class-name=org.hsqldb.jdbc.JDBCDriver")
+				.run();
+		try {
+			Queries q = ctx.getBean(Queries.class);
+			assertThat(q)
+					.as("autoconfig must back off when the user declares a Queries bean")
+					.isSameAs(UserQueriesApp.userInstance);
+			// Only one Queries bean total — autoconfig didn't add a parallel one.
+			assertThat(ctx.getBeansOfType(Queries.class)).hasSize(1);
+		} finally {
+			ctx.close();
+		}
+	}
+
+	@SpringBootApplication
+	static class UserQueriesApp {
+
+		static volatile Queries userInstance;
+
+		@Bean
+		Queries queries() {
+			Queries built = Queries.of(QueriesSource.ofClass(StarterTestDAO.class));
+			userInstance = built;
+			return built;
+		}
+	}
+
+	@Test
+	void userDefinedJdbcClientBeanOverridesAutoConfig() {
+		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(UserJdbcClientApp.class)
+				.web(WebApplicationType.NONE)
+				.properties(
+						"spring.datasource.url=jdbc:hsqldb:mem:starter-user-jdbcclient-test",
+						"spring.datasource.username=SA",
+						"spring.datasource.password=",
+						"spring.datasource.driver-class-name=org.hsqldb.jdbc.JDBCDriver")
+				.run();
+		try {
+			JdbcClient client = ctx.getBean(JdbcClient.class);
+			assertThat(client)
+					.as("autoconfig must back off when the user declares a JdbcClient bean")
+					.isSameAs(UserJdbcClientApp.userInstance);
+			assertThat(ctx.getBeansOfType(JdbcClient.class)).hasSize(1);
+		} finally {
+			ctx.close();
+		}
+	}
+
+	@SpringBootApplication
+	@QueriesScan(basePackageClasses = StarterTestDAO.class)
+	static class UserJdbcClientApp {
+
+		static volatile JdbcClient userInstance;
+
+		@Bean
+		JdbcClient jdbcClient(DataSource dataSource) {
+			JdbcClient built = JdbcClient.create(dataSource);
+			userInstance = built;
+			return built;
+		}
+	}
+
+	@Test
+	void autoConfigStaysOffWithoutDataSource() {
+		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(NoDataSourceApp.class)
+				.web(WebApplicationType.NONE)
+				.run();
+		try {
+			// The @ConditionalOnBean(DataSource.class) guard must keep both
+			// JdbcClient and Queries beans out of the context entirely.
+			assertThatThrownBy(() -> ctx.getBean(Queries.class))
+					.isInstanceOf(NoSuchBeanDefinitionException.class);
+			assertThatThrownBy(() -> ctx.getBean(JdbcClient.class))
+					.isInstanceOf(NoSuchBeanDefinitionException.class);
+		} finally {
+			ctx.close();
+		}
+	}
+
+	@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class, JdbcTemplateAutoConfiguration.class })
+	static class NoDataSourceApp {
 	}
 }

@@ -1,11 +1,11 @@
 package com.jaregu.database.queries.compiling;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.Callable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.jaregu.database.queries.compiling.ArgumentSplitter.Result;
 

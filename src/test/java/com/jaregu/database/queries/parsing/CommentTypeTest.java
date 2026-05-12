@@ -1,8 +1,8 @@
 package com.jaregu.database.queries.parsing;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class CommentTypeTest {
 
@@ -38,9 +38,9 @@ public class CommentTypeTest {
 		assertEquals(true, CommentType.SLASH_AND_ASTERISK.matches("/* aaa bbb */"));
 	}
 
-	@Test(expected = QueryParseException.class)
-	public void testUnwrapNonHypenComment() throws Exception {
-		CommentType.HYPHENS.unwrap(" -- aaa");
+	@Test
+	public void testUnwrapNonHypenComment() {
+		assertThrows(QueryParseException.class, () -> CommentType.HYPHENS.unwrap(" -- aaa"));
 	}
 
 	@Test
@@ -61,9 +61,9 @@ public class CommentTypeTest {
 		assertEquals("-- aaa \n", CommentType.HYPHENS.wrap(" aaa "));
 	}
 
-	@Test(expected = QueryParseException.class)
-	public void testUnwrapNonSlashComment() throws Exception {
-		CommentType.SLASH_AND_ASTERISK.unwrap("/* bbb */ ");
+	@Test
+	public void testUnwrapNonSlashComment() {
+		assertThrows(QueryParseException.class, () -> CommentType.SLASH_AND_ASTERISK.unwrap("/* bbb */ "));
 	}
 
 	@Test

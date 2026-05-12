@@ -1,19 +1,19 @@
 package com.jaregu.database.queries.common;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.regex.Pattern;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.jaregu.database.queries.common.Lexer.LexerMatcher;
 import com.jaregu.database.queries.common.Lexer.LexerPattern;
 
 public class LexerTest {
 
-	@Test(expected = NullPointerException.class)
-	public void testRequiredContent() throws Exception {
-		new Lexer(null);
+	@Test
+	public void testRequiredContent() {
+		assertThrows(NullPointerException.class, () -> new Lexer(null));
 	}
 
 	@Test
@@ -26,10 +26,10 @@ public class LexerTest {
 		assertFalse(lx.hasMore());
 	}
 
-	@Test(expected = LexerException.class)
-	public void testExpectError() throws Exception {
+	@Test
+	public void testExpectError() {
 		Lexer lx = new Lexer("aaa");
-		lx.expect("b");
+		assertThrows(LexerException.class, () -> lx.expect("b"));
 	}
 
 	@Test
@@ -136,32 +136,32 @@ public class LexerTest {
 		assertFalse(lx.hasMore());
 	}
 
-	@Test(expected = LexerException.class)
-	public void testEmptyStringReadingError() throws Exception {
+	@Test
+	public void testEmptyStringReadingError() {
 		LexerPattern pattern = Lexer.newPattern().stopAfter(Lexer.anyLetterOrDigit());
 		Lexer lx = new Lexer("");
 		assertFalse(lx.hasMore());
-		lx.read(pattern);
+		assertThrows(LexerException.class, () -> lx.read(pattern));
 	}
 
-	@Test(expected = LexerException.class)
-	public void testAfterEndReadingError() throws Exception {
+	@Test
+	public void testAfterEndReadingError() {
 		LexerPattern pattern = Lexer.newPattern().stopAfter(Lexer.anyLetterOrDigit());
 		Lexer lx = new Lexer("a");
 		assertTrue(lx.hasMore());
 		assertEquals("a", lx.read(pattern));
 		assertFalse(lx.hasMore());
-		lx.read(pattern);
+		assertThrows(LexerException.class, () -> lx.read(pattern));
 	}
 
-	@Test(expected = LexerException.class)
-	public void testNoMatchingReading() throws Exception {
+	@Test
+	public void testNoMatchingReading() {
 		LexerPattern pattern = Lexer.newPattern().stopAfter(Lexer.anyDigit());
 		Lexer lx = new Lexer("1a");
 		assertTrue(lx.hasMore());
 		assertEquals("1", lx.read(pattern));
 		assertTrue(lx.hasMore());
-		lx.read(pattern);
+		assertThrows(LexerException.class, () -> lx.read(pattern));
 	}
 
 	@Test
@@ -215,10 +215,11 @@ public class LexerTest {
 				expect(" 123"));
 	}
 
-	@Test(expected = LexerException.class)
-	public void testNonClosedSkipError() throws Exception {
+	@Test
+	public void testNonClosedSkipError() {
 		Lexer lx = new Lexer("123a123");
-		lx.read(Lexer.newPattern().stopAfter(Lexer.eof()).skipAllBetween("a", "b"));
+		assertThrows(LexerException.class,
+				() -> lx.read(Lexer.newPattern().stopAfter(Lexer.eof()).skipAllBetween("a", "b")));
 	}
 
 	@Test

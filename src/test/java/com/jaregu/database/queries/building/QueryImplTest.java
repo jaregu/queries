@@ -14,17 +14,20 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.jaregu.database.queries.dialect.Dialect;
 import com.jaregu.database.queries.dialect.Orderable;
 import com.jaregu.database.queries.dialect.Pageable;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class QueryImplTest {
 
 	private QueryImpl query;
@@ -45,7 +48,7 @@ public class QueryImplTest {
 
 	private Map<String, ?> attributes = Collections.singletonMap("1", "first");
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		query = new QueryImpl("content", parameters, attributes, dialect);
 

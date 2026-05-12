@@ -1,12 +1,13 @@
 package com.jaregu.database.queries.compiling.expr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ConstantTest {
 
@@ -91,8 +92,8 @@ public class ConstantTest {
 		assertEquals(Optional.empty(), Constant.parse("asasas"));
 	}
 
-	@Test(expected = ExpressionParseException.class)
+	@Test
 	public void testStringException() {
-		Constant.parse("'asdasd");
+		assertThrows(ExpressionParseException.class, () -> Constant.parse("'asdasd"));
 	}
 }

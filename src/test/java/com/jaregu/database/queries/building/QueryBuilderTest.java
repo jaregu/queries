@@ -7,14 +7,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class QueryBuilderTest {
 
 	private TestBuilder builder;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		builder = new TestBuilder();
 	}

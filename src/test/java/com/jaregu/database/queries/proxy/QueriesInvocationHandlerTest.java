@@ -23,13 +23,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.jaregu.database.queries.Queries;
 import com.jaregu.database.queries.QueryId;
@@ -41,7 +43,8 @@ import com.jaregu.database.queries.ext.AbstractSearch;
 import com.jaregu.database.queries.ext.OrderableSearch;
 import com.jaregu.database.queries.ext.PageableSearch;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class QueriesInvocationHandlerTest {
 
 	@Mock
@@ -84,7 +87,7 @@ public class QueriesInvocationHandlerTest {
 
 	private Map<Class<? extends Annotation>, QueryConverterFactory> converters = new HashMap<>();
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		when(queries.get(queryId11)).thenReturn(preparedQuery11);
 		when(queries.get(queryId12)).thenReturn(preparedQuery12);
