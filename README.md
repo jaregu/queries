@@ -13,7 +13,9 @@ Main features:
 - SQL Dialects for overridable query source SQL files (aaa/bbb.sql and aaa/bbb.mariadb.sql for same query source)
 - Proxiable interfaces support (use interface with annotations to create bridge between sql file and java code, unleash easy binding with DI)
 - DI supported (Optional [Guice](https://github.com/google/guice) support included)
-- Example executing layer included (Optional [Dalesbred](https://dalesbred.org/) executing layer + [HikariCP](https://github.com/brettwooldridge/HikariCP) sql datasource wrapper included)
+- Pluggable execution layer: optional [Dalesbred](https://dalesbred.org/) integration, optional [Spring JdbcClient](https://docs.spring.io/spring-framework/reference/data-access/jdbc/client.html) integration, optional [HikariCP](https://github.com/brettwooldridge/HikariCP) sql datasource wrapper
+- Spring Boot ready: optional `queries-spring-boot-starter` auto-wires Queries on top of Spring Boot's `DataSource`
+- Java 17 records work as both query parameters and result rows
 - Conversion support for queries (Proxied interface can return data from database using some defined coversion)
 - Optional queries caching possibility (Optional [Caffeine](https://github.com/ben-manes/caffeine) cache wrapper included)
 - Query attributes support for executing, caching or some other layer (additional info about query)
@@ -375,6 +377,73 @@ public class Jobs {
 		System.out.println(dao.searchSpecial(JobsSearch.all()));
 
 	}
+}
+```
+
+# Quick-start (Spring Boot)
+
+Add the starter:
+``` groovy
+dependencies {
+    implementation 'com.jaregu:queries-spring-boot-starter:2.+'
+    runtimeOnly 'org.hsqldb:hsqldb'   // or your favourite JDBC driver
+}
+```
+
+Declare the same `JobDAO.sql` and `Job` record/POJO as in the Guice example above, plus the same `@QueriesSourceClass` DAO interface — the annotations (`@QueryRef`, `@ExecuteUpdate`, `@FindAll`, `@FindOptional`, `@FindUnique`) carry over unchanged. The only thing the Spring Boot world changes is the wiring:
+
+```java
+@SpringBootApplication
+@QueriesScan(basePackageClasses = JobDAO.class)
+public class App {
+    public static void main(String[] args) {
+        SpringApplication.run(App.class, args);
+    }
+}
+```
+
+The starter then provides:
+
+- a `JdbcClient` bean on top of Spring Boot's auto-configured `DataSource`
+- a `Queries` bean with the four Spring-backed mapper factories pre-installed
+- a Spring bean for every `@QueriesSourceClass`-annotated interface found under the scanned packages, so DAOs are `@Autowired` directly
+
+```java
+@Service
+public class Jobs {
+
+    private final JobDAO dao;
+
+    public Jobs(JobDAO dao) {
+        this.dao = dao;
+    }
+
+    @Transactional
+    public void createTable() {
+        dao.create();
+    }
+}
+```
+
+Transactions: use Spring's `@Transactional` on your service methods — `JdbcClient` participates in the active transaction automatically.
+
+Tuning the builder (dialect, cache, custom mappers, entities): publish one or more `QueriesCustomizer` beans:
+
+```java
+@Bean
+QueriesCustomizer mysqlDialect() {
+    return b -> b.dialect(Dialects.mysql());
+}
+```
+
+For plain Spring (non-Boot) projects, do the wiring by hand with `SpringQueriesConfigurer`:
+
+```java
+@Bean
+Queries queries(JdbcClient jdbc, List<QueriesSource> sources) {
+    Queries.Builder b = Queries.builder();
+    sources.forEach(b::source);
+    return SpringQueriesConfigurer.configure(b, jdbc).build();
 }
 ```
 

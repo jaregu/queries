@@ -1,0 +1,3 @@
+rootProject.name = 'queries'
+
+include 'queries-spring-boot-starter'

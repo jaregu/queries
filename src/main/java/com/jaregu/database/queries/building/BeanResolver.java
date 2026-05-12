@@ -77,7 +77,12 @@ public class BeanResolver implements NamedResolver {
 			try {
 				return Optional.of(bean.getClass().getMethod("is" + capitalizedName));
 			} catch (NoSuchMethodException e2) {
-				return Optional.empty();
+				// Java 17 record-style accessor: `propertyName()` with no get/is prefix.
+				try {
+					return Optional.of(bean.getClass().getMethod(propertyName));
+				} catch (NoSuchMethodException e3) {
+					return Optional.empty();
+				}
 			}
 		}
 	}

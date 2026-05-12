@@ -1,0 +1,47 @@
+base {
+	archivesName = 'queries-spring-boot-starter'
+}
+
+dependencies {
+	api project(':')
+	api 'org.springframework.boot:spring-boot-autoconfigure:3.3.4'
+	api 'org.springframework:spring-jdbc:6.1.13'
+	api 'org.springframework:spring-tx:6.1.13'
+
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor:3.3.4'
+
+	testImplementation platform('org.junit:junit-bom:5.10.3')
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'org.assertj:assertj-core:3.26.3'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test:3.3.4'
+	testImplementation 'org.springframework.boot:spring-boot-starter-jdbc:3.3.4'
+	testImplementation 'org.hsqldb:hsqldb:2.7.3'
+}
+
+jar {
+	manifest {
+		attributes(
+			'Implementation-Title': 'Jaregu Queries Spring Boot Starter',
+			'Implementation-Version': project.version
+		)
+	}
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			from components.java
+			artifactId = 'queries-spring-boot-starter'
+			pom {
+				name = 'Jaregu Queries Spring Boot Starter'
+				description = 'Spring Boot autoconfiguration for the Jaregu Queries SQL templating library. Wires JdbcClient-backed execution and proxy DAO scanning.'
+				rootProject.ext.configureCommonPom(delegate)
+			}
+		}
+	}
+}
+
+signing {
+	sign publishing.publications.mavenJava
+}

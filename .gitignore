@@ -1,6 +1,26 @@
+# Eclipse
 .classpath
 .project
-.settings
-.gradle
-/bin
-/build
+.settings/
+
+# Gradle
+.gradle/
+build/
+bin/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# VS Code
+.vscode/
+
+# Claude Code workspace
+.claude/
+
+# OS noise
+.DS_Store
+Thumbs.db

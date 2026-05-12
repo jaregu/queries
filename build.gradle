@@ -1,54 +1,101 @@
-buildscript {
-     repositories {
-         jcenter()
-     }
-     dependencies {
-         classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
-     }
-}
-
 plugins {
-	id "com.gradle.build-scan" version "2.3"
+	id 'java-library'
+	id 'eclipse'
+	id 'maven-publish'
+	id 'signing'
+	id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
-apply plugin: 'com.bmuschko.nexus'
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'eclipse-wtp'
- 
-repositories {
-	mavenCentral()
-	// gradlePluginPortal()
-	jcenter()
-	maven { url "https://maven.atlassian.com/3rdparty/" }
+allprojects {
+	group = 'com.jaregu'
+	version = '2.0.0-SNAPSHOT'
+
+	repositories {
+		mavenCentral()
+		// Atlassian-hosted mirror for legacy ojdbc6 used by the example sourceset
+		maven { url 'https://maven.atlassian.com/3rdparty/' }
+	}
 }
 
-buildScan {
-	termsOfServiceUrl = 'https://gradle.com/terms-of-service'
-    termsOfServiceAgree = 'yes'
+// ---------------------------------------------------------------------------
+// Shared POM metadata used by every publication. Defined early so both root
+// and subprojects can reference it via rootProject.ext.configureCommonPom.
+// ---------------------------------------------------------------------------
+
+ext.configureCommonPom = { pom ->
+	pom.url = 'https://github.com/jaregu/queries'
+	pom.inceptionYear = '2017'
+	pom.licenses {
+		license {
+			name = 'The Apache Software License, Version 2.0'
+			url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+			distribution = 'repo'
+		}
+	}
+	pom.developers {
+		developer {
+			id = 'mme-private'
+			name = 'Mārcis Meijers'
+			email = 'marcis.meijers@gmail.com'
+		}
+	}
+	pom.scm {
+		url = 'https://github.com/jaregu/queries'
+		connection = 'scm:git:https://github.com/jaregu/queries.git'
+		developerConnection = 'scm:git:git@github.com:jaregu/queries.git'
+	}
 }
 
-[
-	compileJava,
-	compileTestJava
-]*.options*.encoding = 'UTF-8'
+// Shared Java + publishing config for the root 'queries' artifact AND every subproject.
+configure([rootProject] + subprojects) { proj ->
+	proj.apply plugin: 'java-library'
+	proj.apply plugin: 'maven-publish'
+	proj.apply plugin: 'signing'
 
-sourceCompatibility = 11
+	proj.java {
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(17)
+		}
+		withSourcesJar()
+		withJavadocJar()
+	}
 
-version = '1.4.1'
-archivesBaseName = "queries"
-group = "com.jaregu"
+	proj.tasks.withType(JavaCompile).configureEach {
+		options.encoding = 'UTF-8'
+	}
 
-eclipseJdt.doLast {
-	File f = file('.settings/org.eclipse.core.resources.prefs')
-	f.write('eclipse.preferences.version=1\n')
-	f.append('encoding/<project>=utf-8')
+	proj.tasks.withType(Javadoc).configureEach {
+		options.encoding = 'UTF-8'
+		// Javadoc 17 is strict; relax for now so the build passes on legacy sources
+		options.addStringOption('Xdoclint:none', '-quiet')
+		// Don't fail builds for subprojects that haven't grown any public types yet
+		failOnError = false
+	}
+
+	proj.tasks.withType(Test).configureEach {
+		useJUnitPlatform()
+	}
+
+	proj.signing {
+		// Sign release artifacts only; SNAPSHOT publishing skips signing.
+		required = !proj.version.toString().endsWith('SNAPSHOT')
+	}
+
+	// Disable Sign tasks for SNAPSHOTs at config time so the default
+	// `hasSignatory()` predicate is never evaluated (it would try to load the
+	// GPG key file from the user's ~/.gradle/gradle.properties even when not
+	// needed, causing publishToMavenLocal to fail on machines without a key).
+	proj.tasks.withType(org.gradle.plugins.signing.Sign).configureEach {
+		enabled = !proj.version.toString().endsWith('SNAPSHOT')
+	}
 }
 
-configurations {
-	example
-	exampleCompile.extendsFrom testCompile
-	exampleRuntime.extendsFrom testRuntime
+// ---------------------------------------------------------------------------
+// Root project — the 'queries' artifact.
+// ---------------------------------------------------------------------------
+
+base {
+	archivesName = 'queries'
 }
 
 sourceSets {
@@ -58,107 +105,115 @@ sourceSets {
 	}
 }
 
+// Source set above auto-creates exampleImplementation/exampleRuntimeOnly; just extend them.
+configurations {
+	exampleImplementation.extendsFrom testImplementation
+	exampleRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
 eclipse {
 	classpath {
-		plusConfigurations += [configurations.example]
+		plusConfigurations += [configurations.exampleCompileClasspath]
 	}
 }
 
 dependencies {
-	compile 'org.slf4j:slf4j-api:1.7.25'
-	
-	compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
-	
+	api 'org.slf4j:slf4j-api:2.0.13'
+
+	compileOnly 'com.fasterxml.jackson.core:jackson-annotations:2.17.2'
+
 	// for caching extension
-	compileOnly 'com.github.ben-manes.caffeine:caffeine:3.1.7'
+	compileOnly 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 
 	// for metrics extension
-	compileOnly 'io.dropwizard.metrics5:metrics-core:5.0.0-rc17'
+	compileOnly 'io.dropwizard.metrics5:metrics-core:5.0.0'
 
 	// for guice extension
 	compileOnly 'com.google.inject:guice:7.0.0'
-	
+
 	// for hikari extension
-	compileOnly 'com.zaxxer:HikariCP:5.0.1'
-	
+	compileOnly 'com.zaxxer:HikariCP:5.1.0'
+
 	// for dalesbred extension
 	compileOnly 'org.dalesbred:dalesbred:1.3.5'
 
-	testCompile 'org.mockito:mockito-core:5.4.0'
-	testCompile platform('org.junit:junit-bom:5.10.0')
-	testCompile 'org.junit.jupiter:junit-jupiter'
-	testCompile 'org.junit.vintage:junit-vintage-engine'
-	testCompile 'org.assertj:assertj-core:3.24.2'
-	testCompile 'org.dalesbred:dalesbred:1.3.5'
+	// for spring extension (JdbcClient / JdbcTemplate)
+	compileOnly 'org.springframework:spring-jdbc:6.1.13'
+	compileOnly 'org.springframework:spring-tx:6.1.13'
 
-	example "com.github.ben-manes.caffeine:caffeine:2.+"
+	testImplementation 'org.mockito:mockito-core:5.12.0'
+	testImplementation platform('org.junit:junit-bom:5.10.3')
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	// JUnit 4 API is still used by many existing tests; vintage engine runs them on the JUnit 5 platform
+	testImplementation 'junit:junit:4.13.2'
+	testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'org.assertj:assertj-core:3.26.3'
+	testImplementation 'org.dalesbred:dalesbred:1.3.5'
 
-	//logging
-	example 'ch.qos.logback:logback-classic:1.2.+'
-	example 'org.codehaus.groovy:groovy-all:2.4.13'
+	// For tests that exercise the ext.spring factories against an in-memory DB
+	testImplementation 'org.springframework:spring-jdbc:6.1.13'
+	testImplementation 'org.hsqldb:hsqldb:2.7.3'
 
-	//db
-	example "org.hsqldb:hsqldb:2.4.+"
-	example 'org.mariadb.jdbc:mariadb-java-client:1.5.+'
-	example group: 'com.oracle', name: 'ojdbc6', version: '12.1.0.1-atlassian-hosted'
+	exampleImplementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 
-	example 'com.zaxxer:HikariCP:5.0.1'
-	example 'org.dalesbred:dalesbred:1.3.5'
-	example 'org.assertj:assertj-core:3.24.2'
-	example platform('org.junit:junit-bom:5.10.0')
-	example 'org.junit.jupiter:junit-jupiter'
-	example 'org.junit.vintage:junit-vintage-engine'
-	
-	def lombokVersion = '1.18.28'
-	annotationProcessor 'org.projectlombok:lombok:' + lombokVersion
-	compileOnly 'org.projectlombok:lombok:' + lombokVersion
-    testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
-    testCompileOnly("org.projectlombok:lombok:$lombokVersion")
+	// logging
+	exampleImplementation 'ch.qos.logback:logback-classic:1.5.6'
+
+	// db
+	exampleImplementation 'org.hsqldb:hsqldb:2.7.3'
+	exampleImplementation 'org.mariadb.jdbc:mariadb-java-client:3.4.1'
+	exampleImplementation group: 'com.oracle', name: 'ojdbc6', version: '12.1.0.1-atlassian-hosted'
+
+	exampleImplementation 'com.zaxxer:HikariCP:5.1.0'
+	exampleImplementation 'org.dalesbred:dalesbred:1.3.5'
+	exampleImplementation 'org.assertj:assertj-core:3.26.3'
+
+	def lombokVersion = '1.18.34'
+	annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+	compileOnly "org.projectlombok:lombok:${lombokVersion}"
+	testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+	testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
 }
 
 jar {
 	manifest {
-		attributes 'Implementation-Title': 'Jaregu Queries', 'Implementation-Version': version
+		attributes(
+			'Implementation-Title': 'Jaregu Queries',
+			'Implementation-Version': project.version
+		)
 	}
 }
 
-modifyPom {
-     project {
-         name 'Jaregu Queries'
-         description 'Java based SQL templating project. Store your queries in *.sql files and build queries for execution. Supports simple expressions and conditional clauses and interface proxying for java-sql bridge.'
-         url 'https://github.com/jaregu/queries'
-         inceptionYear '2017'
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			from components.java
+			artifactId = 'queries'
+			pom {
+				name = 'Jaregu Queries'
+				description = 'Java based SQL templating project. Store your queries in *.sql files and build queries for execution. Supports simple expressions, conditional clauses and interface proxying for java-sql bridge.'
+				rootProject.ext.configureCommonPom(delegate)
+			}
+		}
+	}
+}
 
-         scm {
-             url 'https://github.com/jaregu/queries'
-             connection 'scm:https://jaregu@github.com/jaregu/queries.git'
-             developerConnection 'scm:git://github.com/jaregu/queries.git'
-         }
+signing {
+	sign publishing.publications.mavenJava
+}
 
-         licenses {
-             license {
-                 name 'The Apache Software License, Version 2.0'
-                 url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                 distribution 'repo'
-             }
-         }
+// ---------------------------------------------------------------------------
+// Sonatype OSSRH publishing — staging repo created automatically.
+// Credentials read from ~/.gradle/gradle.properties or environment variables
+// (ORG_GRADLE_PROJECT_sonatypeUsername / ORG_GRADLE_PROJECT_sonatypePassword).
+// ---------------------------------------------------------------------------
 
-         developers {
-             developer {
-                 id 'mme-private'
-                 name 'Mārcis Meijers'
-                 email 'marcis.meijers@gmail.com'
-                 roles {
-                     role 'owner'
-                     role 'developer'
-                 }
-             }
-         }
-     }
- }
- 
- extraArchive {
-     sources = true
-     tests = true
-     javadoc = true
- }
+nexusPublishing {
+	repositories {
+		sonatype {
+			nexusUrl.set(uri('https://s01.oss.sonatype.org/service/local/'))
+			snapshotRepositoryUrl.set(uri('https://s01.oss.sonatype.org/content/repositories/snapshots/'))
+		}
+	}
+}
