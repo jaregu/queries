@@ -122,6 +122,64 @@ class QueriesAutoConfigurationTest {
 	}
 
 	@Test
+	void pageableAndOrderableConvertersDriveOrderByLimitOffset() {
+		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(TestApp.class)
+				.web(WebApplicationType.NONE)
+				.properties(
+						"spring.datasource.url=jdbc:hsqldb:mem:starter-paged-sorted-test",
+						"spring.datasource.username=SA",
+						"spring.datasource.password=",
+						"spring.datasource.driver-class-name=org.hsqldb.jdbc.JDBCDriver")
+				.run();
+		try {
+			StarterTestDAO dao = ctx.getBean(StarterTestDAO.class);
+			dao.createTable();
+			dao.insert(new StarterItem(1, "alpha"));
+			dao.insert(new StarterItem(2, "bravo"));
+			dao.insert(new StarterItem(3, "charlie"));
+			dao.insert(new StarterItem(4, "delta"));
+			dao.insert(new StarterItem(5, "echo"));
+
+			// No paging, ascending by label — verifies @QueryRef(toSorted=true)
+			// applies an ORDER BY derived from OrderableSearch.getOrderBy().
+			List<StarterItem> ascending = dao.searchPaged(
+					StarterSearch.unconstrained().asc("label"));
+			assertThat(ascending).extracting(StarterItem::label)
+					.containsExactly("alpha", "bravo", "charlie", "delta", "echo");
+
+			// Descending by label — verifies the "label DESC" suffix wiring.
+			List<StarterItem> descending = dao.searchPaged(
+					StarterSearch.unconstrained().desc("label"));
+			assertThat(descending).extracting(StarterItem::label)
+					.containsExactly("echo", "delta", "charlie", "bravo", "alpha");
+
+			// First page (limit 2 from offset 0), ascending — @QueryRef(toPaged=true)
+			// must apply LIMIT/OFFSET derived from PageableSearch.
+			List<StarterItem> page1 = dao.searchPaged(
+					StarterSearch.unconstrained().asc("id").withOffset(0).withLimit(2));
+			assertThat(page1).extracting(StarterItem::id).containsExactly(1, 2);
+
+			// Second page picks up the middle of the range.
+			List<StarterItem> page2 = dao.searchPaged(
+					StarterSearch.unconstrained().asc("id").withOffset(2).withLimit(2));
+			assertThat(page2).extracting(StarterItem::id).containsExactly(3, 4);
+
+			// Last (partial) page — only one row at offset 4 with limit 2.
+			List<StarterItem> page3 = dao.searchPaged(
+					StarterSearch.unconstrained().asc("id").withOffset(4).withLimit(2));
+			assertThat(page3).extracting(StarterItem::id).containsExactly(5);
+
+			// Combined: descending order + paging — exercises both converters
+			// stacked, in the order the proxy registers them.
+			List<StarterItem> combined = dao.searchPaged(
+					StarterSearch.unconstrained().desc("id").withOffset(1).withLimit(2));
+			assertThat(combined).extracting(StarterItem::id).containsExactly(4, 3);
+		} finally {
+			ctx.close();
+		}
+	}
+
+	@Test
 	void entityFieldGeneratorMacroExpandsAndQueryExecutes() {
 		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(TestApp.class)
 				.web(WebApplicationType.NONE)

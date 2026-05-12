@@ -12,3 +12,6 @@ select id, label from starter_item order by id;
 
 -- count
 select count(*) from starter_item;
+
+-- search_paged
+select id, label from starter_item;

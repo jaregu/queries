@@ -26,4 +26,8 @@ public interface StarterTestDAO {
 	@QueryRef("count")
 	@FindUnique(Integer.class)
 	Integer count();
+
+	@QueryRef(value = "search_paged", toSorted = true, toPaged = true)
+	@FindAll(StarterItem.class)
+	List<StarterItem> searchPaged(StarterSearch search);
 }
