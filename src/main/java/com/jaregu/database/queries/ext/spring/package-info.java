@@ -13,7 +13,7 @@
  * {@code compileOnly} — users only pay for Spring on their classpath if they
  * opt into this extension.
  *
- * <p>Use {@link com.jaregu.database.queries.ext.spring.SpringQueriesConfigurer}
+ * <p>Use {@link com.jaregu.database.queries.ext.spring.SpringQueriesMappers}
  * to register all four factories on a {@code Queries.Builder} in plain Spring
  * setups. Spring Boot users should pull in the
  * {@code queries-spring-boot-starter} artifact which auto-wires this for them.

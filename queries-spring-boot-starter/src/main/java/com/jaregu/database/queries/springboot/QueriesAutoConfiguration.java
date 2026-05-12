@@ -12,7 +12,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import com.jaregu.database.queries.Queries;
-import com.jaregu.database.queries.ext.spring.SpringQueriesConfigurer;
+import com.jaregu.database.queries.QueriesConfigurator;
+import com.jaregu.database.queries.ext.spring.SpringQueriesMappers;
 import com.jaregu.database.queries.parsing.QueriesSource;
 
 /**
@@ -29,8 +30,10 @@ import com.jaregu.database.queries.parsing.QueriesSource;
  * </ul>
  *
  * <p>Users can register additional {@link QueriesSource} beans (directly or via
- * {@link QueriesScan}) and/or supply {@link QueriesCustomizer} beans to tune
- * the builder (dialect, cache, parameter binder, custom mappers).
+ * {@link QueriesScan}) and/or supply {@link QueriesConfigurator} beans to tune
+ * the builder (dialect, cache, parameter binder, custom mappers). The same
+ * {@code QueriesConfigurator} type is used by the Guice integration, so
+ * configurators are portable between both worlds.
  */
 @AutoConfiguration(after = DataSourceAutoConfiguration.class)
 @ConditionalOnClass({ Queries.class, JdbcClient.class })
@@ -48,12 +51,14 @@ public class QueriesAutoConfiguration {
 	public Queries queries(
 			JdbcClient jdbcClient,
 			ObjectProvider<QueriesSource> sources,
-			ObjectProvider<QueriesCustomizer> customizers) {
+			ObjectProvider<QueriesEntity> entities,
+			ObjectProvider<QueriesConfigurator> configurators) {
 
 		Queries.Builder builder = Queries.builder();
 		sources.orderedStream().forEach(builder::source);
-		SpringQueriesConfigurer.configure(builder, jdbcClient);
-		customizers.orderedStream().forEach(c -> c.customize(builder));
+		entities.orderedStream().forEach(e -> builder.entity(e.entityClass(), e.alias()));
+		SpringQueriesMappers.register(builder, jdbcClient);
+		configurators.orderedStream().forEach(c -> c.configure(builder));
 		return builder.build();
 	}
 }

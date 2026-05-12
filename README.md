@@ -202,10 +202,10 @@ package jaregu.queries.di.example;
 import java.util.List;
 import java.util.Optional;
 
-import com.jaregu.database.queries.ext.dalesbred.ExecuteUpdate;
-import com.jaregu.database.queries.ext.dalesbred.FindAll;
-import com.jaregu.database.queries.ext.dalesbred.FindOptional;
-import com.jaregu.database.queries.ext.dalesbred.FindUnique;
+import com.jaregu.database.queries.proxy.ExecuteUpdate;
+import com.jaregu.database.queries.proxy.FindAll;
+import com.jaregu.database.queries.proxy.FindOptional;
+import com.jaregu.database.queries.proxy.FindUnique;
 import com.jaregu.database.queries.proxy.QueriesSourceClass;
 import com.jaregu.database.queries.proxy.QueryParam;
 import com.jaregu.database.queries.proxy.QueryRef;
@@ -407,6 +407,13 @@ The starter then provides:
 - a `JdbcClient` bean on top of Spring Boot's auto-configured `DataSource`
 - a `Queries` bean with the four Spring-backed mapper factories pre-installed
 - a Spring bean for every `@QueriesSourceClass`-annotated interface found under the scanned packages, so DAOs are `@Autowired` directly
+- a `QueriesEntity` bean for every `@Table`-annotated class found under the scanned packages, so the `entityFieldGenerator(...)` SQL macro works without manual registration
+
+Need an entity with a non-default alias? Drop a `QueriesEntity` `@Bean` in your config:
+
+```java
+@Bean QueriesEntity jobEntity() { return QueriesEntity.of(Job.class, "j"); }
+```
 
 ```java
 @Service
@@ -427,23 +434,23 @@ public class Jobs {
 
 Transactions: use Spring's `@Transactional` on your service methods — `JdbcClient` participates in the active transaction automatically.
 
-Tuning the builder (dialect, cache, custom mappers, entities): publish one or more `QueriesCustomizer` beans:
+Tuning the builder (dialect, cache, custom mappers, entities): publish one or more `QueriesConfigurator` beans — the same functional interface used by the Guice integration, so configurators are portable between both worlds:
 
 ```java
 @Bean
-QueriesCustomizer mysqlDialect() {
+QueriesConfigurator mysqlDialect() {
     return b -> b.dialect(Dialects.mysql());
 }
 ```
 
-For plain Spring (non-Boot) projects, do the wiring by hand with `SpringQueriesConfigurer`:
+For plain Spring (non-Boot) projects, do the wiring by hand with `SpringQueriesMappers`:
 
 ```java
 @Bean
 Queries queries(JdbcClient jdbc, List<QueriesSource> sources) {
     Queries.Builder b = Queries.builder();
     sources.forEach(b::source);
-    return SpringQueriesConfigurer.configure(b, jdbc).build();
+    return SpringQueriesMappers.register(b, jdbc).build();
 }
 ```
 

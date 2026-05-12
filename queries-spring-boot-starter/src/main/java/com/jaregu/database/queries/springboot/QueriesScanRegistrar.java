@@ -17,13 +17,24 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
+import com.jaregu.database.queries.annotation.Table;
 import com.jaregu.database.queries.parsing.QueriesSource;
 import com.jaregu.database.queries.proxy.QueriesSourceClass;
 
 /**
- * Registers a {@link QueriesProxyFactoryBean} and a {@link QueriesSource} bean
- * for every {@link QueriesSourceClass}-annotated interface found in the
- * packages configured on {@link QueriesScan}.
+ * Two-pass classpath scanner driven by {@link QueriesScan}.
+ *
+ * <ol>
+ *   <li>{@link QueriesSourceClass}-annotated interfaces are registered as
+ *       {@link QueriesProxyFactoryBean} beans (so DAOs are injectable) plus a
+ *       matching {@link QueriesSource} bean so the
+ *       {@link QueriesAutoConfiguration#queries Queries} bean picks them
+ *       up.</li>
+ *   <li>{@link Table}-annotated classes are registered as
+ *       {@link QueriesEntity} beans (alias = simple class name), so the
+ *       {@code entityFieldGenerator} SQL macro can reflect over their
+ *       {@code @Column} fields.</li>
+ * </ol>
  */
 public class QueriesScanRegistrar implements ImportBeanDefinitionRegistrar {
 
@@ -42,10 +53,14 @@ public class QueriesScanRegistrar implements ImportBeanDefinitionRegistrar {
 			return;
 		}
 
+		ClassLoader classLoader = QueriesScanRegistrar.class.getClassLoader();
+		scanProxies(registry, basePackages, classLoader);
+		scanEntities(registry, basePackages, classLoader);
+	}
+
+	private static void scanProxies(BeanDefinitionRegistry registry, Set<String> basePackages, ClassLoader classLoader) {
 		ClassPathScanningCandidateComponentProvider scanner = new InterfaceComponentProvider();
 		scanner.addIncludeFilter(new AnnotationTypeFilter(QueriesSourceClass.class));
-
-		ClassLoader classLoader = QueriesScanRegistrar.class.getClassLoader();
 
 		for (String basePackage : basePackages) {
 			for (BeanDefinition candidate : scanner.findCandidateComponents(basePackage)) {
@@ -56,6 +71,25 @@ public class QueriesScanRegistrar implements ImportBeanDefinitionRegistrar {
 				Class<?> daoInterface = loadClass(classLoader, className);
 				registerProxyFactoryBean(registry, daoInterface);
 				registerQueriesSourceBean(registry, daoInterface);
+			}
+		}
+	}
+
+	private static void scanEntities(BeanDefinitionRegistry registry, Set<String> basePackages, ClassLoader classLoader) {
+		// useDefaultFilters=false — we only want @Table matches, not generic
+		// @Component scanning. The default isCandidateComponent (concrete,
+		// non-abstract, top-level) is exactly what we want for entity classes.
+		ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+		scanner.addIncludeFilter(new AnnotationTypeFilter(Table.class));
+
+		for (String basePackage : basePackages) {
+			for (BeanDefinition candidate : scanner.findCandidateComponents(basePackage)) {
+				String className = candidate.getBeanClassName();
+				if (className == null) {
+					continue;
+				}
+				Class<?> entityClass = loadClass(classLoader, className);
+				registerQueriesEntityBean(registry, entityClass);
 			}
 		}
 	}
@@ -86,6 +120,17 @@ public class QueriesScanRegistrar implements ImportBeanDefinitionRegistrar {
 		registry.registerBeanDefinition(beanName, bd);
 	}
 
+	private static void registerQueriesEntityBean(BeanDefinitionRegistry registry, Class<?> entityClass) {
+		String beanName = "queriesEntity$" + entityClass.getName().replace('.', '$');
+		if (registry.containsBeanDefinition(beanName)) {
+			return;
+		}
+		AbstractBeanDefinition bd = BeanDefinitionBuilder
+				.genericBeanDefinition(QueriesEntity.class, () -> QueriesEntity.of(entityClass))
+				.getBeanDefinition();
+		registry.registerBeanDefinition(beanName, bd);
+	}
+
 	private static Set<String> resolveBasePackages(AnnotationAttributes attrs, AnnotationMetadata metadata) {
 		Set<String> packages = new LinkedHashSet<>();
 		packages.addAll(Arrays.asList(attrs.getStringArray("basePackages")));
@@ -103,14 +148,14 @@ public class QueriesScanRegistrar implements ImportBeanDefinitionRegistrar {
 		try {
 			return ClassUtils.forName(className, classLoader);
 		} catch (ClassNotFoundException e) {
-			throw new IllegalStateException("Cannot load @QueriesSourceClass candidate: " + className, e);
+			throw new IllegalStateException("Cannot load @QueriesScan candidate: " + className, e);
 		}
 	}
 
 	/**
-	 * Scanner variant that accepts interfaces (the default
+	 * Scanner variant that accepts interfaces — the default
 	 * {@link ClassPathScanningCandidateComponentProvider} rejects them because
-	 * they aren't independent components in the bean sense).
+	 * they aren't independent bean components in the standard sense.
 	 */
 	private static final class InterfaceComponentProvider extends ClassPathScanningCandidateComponentProvider {
 

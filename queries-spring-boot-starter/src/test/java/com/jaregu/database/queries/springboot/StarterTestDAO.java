@@ -2,9 +2,9 @@ package com.jaregu.database.queries.springboot;
 
 import java.util.List;
 
-import com.jaregu.database.queries.ext.dalesbred.ExecuteUpdate;
-import com.jaregu.database.queries.ext.dalesbred.FindAll;
-import com.jaregu.database.queries.ext.dalesbred.FindUnique;
+import com.jaregu.database.queries.proxy.ExecuteUpdate;
+import com.jaregu.database.queries.proxy.FindAll;
+import com.jaregu.database.queries.proxy.FindUnique;
 import com.jaregu.database.queries.proxy.QueriesSourceClass;
 import com.jaregu.database.queries.proxy.QueryRef;
 

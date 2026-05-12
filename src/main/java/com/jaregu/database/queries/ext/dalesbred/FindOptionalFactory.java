@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.dalesbred.Database;
 
+import com.jaregu.database.queries.proxy.FindOptional;
 import com.jaregu.database.queries.proxy.QueryMapper;
 import com.jaregu.database.queries.proxy.QueryMapperFactory;
 

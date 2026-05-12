@@ -8,17 +8,22 @@ import java.lang.annotation.Target;
 
 import org.springframework.context.annotation.Import;
 
+import com.jaregu.database.queries.annotation.Table;
 import com.jaregu.database.queries.proxy.QueriesSourceClass;
 
 /**
- * Scans the supplied packages for interfaces annotated with
- * {@link QueriesSourceClass} and, for each one, registers:
+ * Scans the supplied packages and registers:
+ *
  * <ul>
- *   <li>a {@code QueriesSource} bean derived from the interface (so the
- *       {@link QueriesAutoConfiguration#queries Queries} bean picks it up)</li>
- *   <li>a {@code FactoryBean<T>} that returns
- *       {@code queries.proxy(T.class)} — so the DAO interface is injectable
- *       directly anywhere in the application</li>
+ *   <li>For each {@link QueriesSourceClass}-annotated interface — a
+ *       {@code QueriesSource} bean derived from the interface and a
+ *       {@code FactoryBean<T>} that produces {@code queries.proxy(T.class)},
+ *       so the DAO is injectable anywhere as the plain interface type.</li>
+ *   <li>For each {@link Table}-annotated class — a
+ *       {@link QueriesEntity} bean (alias = simple class name) so the
+ *       {@code entityFieldGenerator} SQL macro can reflect over the class's
+ *       {@code @Column} fields. Matches Guice's
+ *       {@code QueriesModule.entityModule(Class)} ergonomics.</li>
  * </ul>
  *
  * <p>Typical usage on the application class:
@@ -30,7 +35,10 @@ import com.jaregu.database.queries.proxy.QueriesSourceClass;
  * }</pre>
  *
  * <p>If neither {@link #basePackages} nor {@link #basePackageClasses} is set,
- * the package of the annotated class is used.
+ * the package of the annotated class is used. Need a non-default entity alias?
+ * Skip the scan for that class (move it out of the scanned packages) and
+ * declare an explicit {@code @Bean QueriesEntity ...} instead, or rely on the
+ * default and avoid simple-name collisions across scanned packages.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

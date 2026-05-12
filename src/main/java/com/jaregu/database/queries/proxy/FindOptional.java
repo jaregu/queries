@@ -1,4 +1,4 @@
-package com.jaregu.database.queries.ext.dalesbred;
+package com.jaregu.database.queries.proxy;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
@@ -6,13 +6,12 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
-import com.jaregu.database.queries.proxy.Mapper;
+import java.util.Optional;
 
 @Target({ FIELD, METHOD })
 @Retention(RUNTIME)
 @Mapper
-public @interface FindAll {
+public @interface FindOptional {
 
 	/**
 	 * Row class
@@ -20,4 +19,10 @@ public @interface FindAll {
 	 * @return
 	 */
 	Class<?> value();
+
+	/**
+	 * By default uses {@link Optional} class. Set to false to get value or null
+	 * of value is not found
+	 */
+	boolean useOptional() default true;
 }

@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 
 import org.dalesbred.Database;
 
+import com.jaregu.database.queries.proxy.FindUnique;
 import com.jaregu.database.queries.proxy.QueryMapper;
 import com.jaregu.database.queries.proxy.QueryMapperFactory;
 

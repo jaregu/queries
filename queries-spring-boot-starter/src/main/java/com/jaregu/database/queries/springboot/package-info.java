@@ -12,12 +12,14 @@
  *       installed.</li>
  *   <li>{@link com.jaregu.database.queries.springboot.QueriesScan} — class-level
  *       annotation that scans configured packages for
- *       {@code @QueriesSourceClass} interfaces and registers each one as an
- *       injectable proxy bean plus its underlying
- *       {@code QueriesSource}.</li>
- *   <li>{@link com.jaregu.database.queries.springboot.QueriesCustomizer} —
- *       functional bean hook for tuning the {@code Queries.Builder} (dialect,
- *       cache, custom mappers, etc.).</li>
+ *       {@code @QueriesSourceClass} interfaces (registered as proxy beans +
+ *       their {@code QueriesSource}) and {@code @Table} entities (registered
+ *       as {@link com.jaregu.database.queries.springboot.QueriesEntity}
+ *       beans).</li>
+ *   <li>{@link com.jaregu.database.queries.QueriesConfigurator} — the same
+ *       functional interface used by the Guice integration; any
+ *       {@code QueriesConfigurator} bean is applied to the builder before
+ *       {@code build()}.</li>
  * </ul>
  */
 package com.jaregu.database.queries.springboot;

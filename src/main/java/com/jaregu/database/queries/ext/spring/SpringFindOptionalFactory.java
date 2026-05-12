@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-import com.jaregu.database.queries.ext.dalesbred.FindOptional;
+import com.jaregu.database.queries.proxy.FindOptional;
 import com.jaregu.database.queries.proxy.QueryMapper;
 import com.jaregu.database.queries.proxy.QueryMapperFactory;
 

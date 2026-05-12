@@ -3,10 +3,10 @@ package com.jaregu.database.queries.ext.spring;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import com.jaregu.database.queries.Queries;
-import com.jaregu.database.queries.ext.dalesbred.ExecuteUpdate;
-import com.jaregu.database.queries.ext.dalesbred.FindAll;
-import com.jaregu.database.queries.ext.dalesbred.FindOptional;
-import com.jaregu.database.queries.ext.dalesbred.FindUnique;
+import com.jaregu.database.queries.proxy.ExecuteUpdate;
+import com.jaregu.database.queries.proxy.FindAll;
+import com.jaregu.database.queries.proxy.FindOptional;
+import com.jaregu.database.queries.proxy.FindUnique;
 
 /**
  * One-shot helper that registers the four Spring-backed
@@ -17,8 +17,8 @@ import com.jaregu.database.queries.ext.dalesbred.FindUnique;
  * @Bean
  * Queries queries(JdbcClient jdbc, List<QueriesSource> sources) {
  *     Queries.Builder b = Queries.builder();
- *     sources.forEach(b::sources);
- *     SpringQueriesConfigurer.configure(b, jdbc);
+ *     sources.forEach(b::source);
+ *     SpringQueriesMappers.register(b, jdbc);
  *     return b.build();
  * }
  * }</pre>
@@ -26,9 +26,9 @@ import com.jaregu.database.queries.ext.dalesbred.FindUnique;
  * <p>Spring Boot users get this wired automatically by the
  * {@code queries-spring-boot-starter} module.
  */
-public final class SpringQueriesConfigurer {
+public final class SpringQueriesMappers {
 
-	private SpringQueriesConfigurer() {
+	private SpringQueriesMappers() {
 	}
 
 	/**
@@ -37,7 +37,7 @@ public final class SpringQueriesConfigurer {
 	 * {@link SpringFindUniqueFactory}) on the supplied builder. Returns the
 	 * builder for chaining.
 	 */
-	public static Queries.Builder configure(Queries.Builder builder, JdbcClient jdbcClient) {
+	public static Queries.Builder register(Queries.Builder builder, JdbcClient jdbcClient) {
 		return builder
 				.mapper(ExecuteUpdate.class, new SpringExecuteUpdateFactory(jdbcClient))
 				.mapper(FindAll.class, new SpringFindAllFactory(jdbcClient))

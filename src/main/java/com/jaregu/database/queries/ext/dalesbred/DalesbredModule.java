@@ -9,6 +9,10 @@ import org.dalesbred.Database;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.jaregu.database.queries.ext.guice.QueriesModule;
+import com.jaregu.database.queries.proxy.ExecuteUpdate;
+import com.jaregu.database.queries.proxy.FindAll;
+import com.jaregu.database.queries.proxy.FindOptional;
+import com.jaregu.database.queries.proxy.FindUnique;
 
 import jakarta.inject.Provider;
 import jakarta.inject.Singleton;

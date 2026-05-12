@@ -12,6 +12,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.jaregu.database.queries.Queries;
+import com.jaregu.database.queries.QueriesConfigurator;
 import com.jaregu.database.queries.compiling.Entities;
 import com.jaregu.database.queries.parsing.QueriesSource;
 import com.jaregu.database.queries.parsing.QueriesSources;

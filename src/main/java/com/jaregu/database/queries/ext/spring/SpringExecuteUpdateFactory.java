@@ -5,7 +5,7 @@ import java.lang.annotation.Annotation;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-import com.jaregu.database.queries.ext.dalesbred.ExecuteUpdate;
+import com.jaregu.database.queries.proxy.ExecuteUpdate;
 import com.jaregu.database.queries.proxy.QueryMapper;
 import com.jaregu.database.queries.proxy.QueryMapperFactory;
 

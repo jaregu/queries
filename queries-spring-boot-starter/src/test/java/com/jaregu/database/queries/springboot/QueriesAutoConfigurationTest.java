@@ -1,6 +1,7 @@
 package com.jaregu.database.queries.springboot;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.WebApplicationType;
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import com.jaregu.database.queries.Queries;
+import com.jaregu.database.queries.QueriesConfigurator;
 
 /**
  * End-to-end check that:
@@ -60,17 +62,75 @@ class QueriesAutoConfigurationTest {
 	}
 
 	@Test
-	void customizerHookRunsAndCanOverrideDefaults() {
-		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(CustomizerApp.class)
+	void scannedEntityIsRegisteredAsQueriesEntityBean() {
+		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(TestApp.class)
 				.web(WebApplicationType.NONE)
 				.properties(
-						"spring.datasource.url=jdbc:hsqldb:mem:starter-customizer-test",
+						"spring.datasource.url=jdbc:hsqldb:mem:starter-entity-scan-test",
 						"spring.datasource.username=SA",
 						"spring.datasource.password=",
 						"spring.datasource.driver-class-name=org.hsqldb.jdbc.JDBCDriver")
 				.run();
 		try {
-			RecordingCustomizer recording = ctx.getBean(RecordingCustomizer.class);
+			// @Table-annotated StarterEntity sits in the scanned package; the
+			// registrar must have registered a QueriesEntity bean for it with
+			// alias defaulted to the simple class name.
+			QueriesEntity[] entities = ctx.getBeanProvider(QueriesEntity.class).stream()
+					.toArray(QueriesEntity[]::new);
+			assertThat(entities)
+					.extracting(QueriesEntity::entityClass, QueriesEntity::alias)
+					.contains(tuple(StarterEntity.class, "StarterEntity"));
+		} finally {
+			ctx.close();
+		}
+	}
+
+	@Test
+	void explicitlyDeclaredQueriesEntityBeanIsPickedUp() {
+		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(ExplicitEntityApp.class)
+				.web(WebApplicationType.NONE)
+				.properties(
+						"spring.datasource.url=jdbc:hsqldb:mem:starter-entity-explicit-test",
+						"spring.datasource.username=SA",
+						"spring.datasource.password=",
+						"spring.datasource.driver-class-name=org.hsqldb.jdbc.JDBCDriver")
+				.run();
+		try {
+			QueriesEntity[] entities = ctx.getBeanProvider(QueriesEntity.class).stream()
+					.toArray(QueriesEntity[]::new);
+			// One scanned (StarterEntity) + one explicit (StarterItem with custom alias).
+			assertThat(entities)
+					.extracting(QueriesEntity::entityClass, QueriesEntity::alias)
+					.contains(
+							tuple(StarterEntity.class, "StarterEntity"),
+							tuple(StarterItem.class, "item"));
+		} finally {
+			ctx.close();
+		}
+	}
+
+	@SpringBootApplication
+	@QueriesScan(basePackageClasses = StarterTestDAO.class)
+	static class ExplicitEntityApp {
+
+		@Bean
+		QueriesEntity itemEntity() {
+			return QueriesEntity.of(StarterItem.class, "item");
+		}
+	}
+
+	@Test
+	void configuratorHookRuns() {
+		ConfigurableApplicationContext ctx = new SpringApplicationBuilder(ConfiguratorApp.class)
+				.web(WebApplicationType.NONE)
+				.properties(
+						"spring.datasource.url=jdbc:hsqldb:mem:starter-configurator-test",
+						"spring.datasource.username=SA",
+						"spring.datasource.password=",
+						"spring.datasource.driver-class-name=org.hsqldb.jdbc.JDBCDriver")
+				.run();
+		try {
+			RecordingConfigurator recording = ctx.getBean(RecordingConfigurator.class);
 			assertThat(recording.invoked).isTrue();
 		} finally {
 			ctx.close();
@@ -79,19 +139,19 @@ class QueriesAutoConfigurationTest {
 
 	@SpringBootApplication
 	@QueriesScan(basePackageClasses = StarterTestDAO.class)
-	static class CustomizerApp {
+	static class ConfiguratorApp {
 
 		@Bean
-		RecordingCustomizer recordingCustomizer() {
-			return new RecordingCustomizer();
+		RecordingConfigurator recordingConfigurator() {
+			return new RecordingConfigurator();
 		}
 	}
 
-	static class RecordingCustomizer implements QueriesCustomizer {
+	static class RecordingConfigurator implements QueriesConfigurator {
 		volatile boolean invoked;
 
 		@Override
-		public void customize(Queries.Builder builder) {
+		public void configure(Queries.Builder builder) {
 			invoked = true;
 		}
 	}

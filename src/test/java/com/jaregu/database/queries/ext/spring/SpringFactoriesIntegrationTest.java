@@ -40,8 +40,8 @@ class SpringFactoriesIntegrationTest {
 
 		JdbcClient jdbcClient = JdbcClient.create(dataSource);
 
-		Queries queries = SpringQueriesConfigurer
-				.configure(Queries.builder().sourceOfClass(SpringTestDAO.class), jdbcClient)
+		Queries queries = SpringQueriesMappers
+				.register(Queries.builder().sourceOfClass(SpringTestDAO.class), jdbcClient)
 				.build();
 
 		dao = queries.proxy(SpringTestDAO.class);

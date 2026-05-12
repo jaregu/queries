@@ -4,7 +4,7 @@ import java.lang.annotation.Annotation;
 
 import org.springframework.jdbc.core.simple.JdbcClient;
 
-import com.jaregu.database.queries.ext.dalesbred.FindAll;
+import com.jaregu.database.queries.proxy.FindAll;
 import com.jaregu.database.queries.proxy.QueryMapper;
 import com.jaregu.database.queries.proxy.QueryMapperFactory;
 
