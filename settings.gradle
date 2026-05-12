@@ -1,3 +1,25 @@
+plugins {
+	id 'org.ajoberstar.reckon.settings' version '2.0.0'
+}
+
+// Reckon: version comes from git state.
+//   - tagged commit `v2.0.1` → version = "2.0.1"
+//   - untagged commit + `-Preckon.stage=snapshot` → version = "<next>-SNAPSHOT"
+//   - untagged commit, no stage prop → version = "<next>-alpha.0.<distance>+<sha>"
+// `-Preckon.scope=major|minor|patch` controls the bump that <next> reflects.
+reckon {
+	setDefaultInferredScope('patch')
+	snapshots()
+	setScopeCalc(calcScopeFromProp())
+	setStageCalc(calcStageFromProp())
+	setTagWriter { v -> "v$v" }
+	setTagParser { tag ->
+		tag.startsWith('v')
+			? org.ajoberstar.reckon.core.Version.parse(tag.substring(1))
+			: java.util.Optional.empty()
+	}
+}
+
 rootProject.name = 'queries'
 
 include 'queries-spring-boot-starter'
