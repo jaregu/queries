@@ -363,6 +363,27 @@ SET -- entityFieldGenerator(template = 'columnAndValue' entityClass = 'Job' excl
 
 Templates: `column`, `value`, `columnAndValue`. Options: `entityClass`, `alias`, `excludeColumns`.
 
+### Multi-statement batch queries
+
+By default each `;` terminates a query — anything after it becomes the next named query. Some dialects need several statements to run as one JDBC batch (SQL Server's `OUTPUT … INTO @table` workaround, `WITH x AS (INSERT … RETURNING …)`, anonymous PL/SQL blocks, etc.).
+
+Append `(batch)` to the name comment to opt in. All `;` separators are preserved and the whole block ships to JDBC as one literal string:
+
+```sql
+-- insertReturningId (batch)
+DECLARE @ids TABLE (u_nr BIGINT);
+INSERT INTO par_k (col1, col2)
+    OUTPUT inserted.u_nr INTO @ids
+    VALUES (:col1, :col2);
+SELECT u_nr FROM @ids
+```
+
+- The marker is case-insensitive (`(batch)`, `(Batch)`, `(BATCH)` all work) and only counts on the *name* comment — `(batch)` inside a body comment is ignored.
+- The query name is everything before `(batch)`, so the example above is referenced as `insertReturningId`.
+- Named parameters (`:col1`, `:col2`) bind across all statements just like a regular query.
+- `@FindUnique` / `@FindAll` / `@FindOptional` read the last statement's result set; `@ExecuteUpdate` returns the driver-specific affected-row count (SQL Server: last DML statement).
+- The batch ends at the next named query in the file (or EOF), so batch and regular queries can coexist in the same `.sql` file.
+
 ---
 
 ## Versioning
