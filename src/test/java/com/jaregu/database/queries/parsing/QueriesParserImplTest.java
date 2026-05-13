@@ -1,8 +1,10 @@
 package com.jaregu.database.queries.parsing;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -91,6 +93,216 @@ public class QueriesParserImplTest {
 	public void testName() throws Exception {
 		testQueries(queries(query("query 8", "This is not a comment '--query or something'\n",
 				"and this is '/*not yet*/' a comment\n", "this is ", queryId("-- query 8\n"), "some content")));
+	}
+
+	@Test
+	public void testSingleBatchQueryParsesAsOneQueryWithSemicolonsKept() {
+		String sql = "-- insert (batch)\n"
+				+ "DECLARE @ids TABLE (u_nr BIGINT);\n"
+				+ "INSERT INTO par_k (col1) OUTPUT inserted.u_nr INTO @ids VALUES (1);\n"
+				+ "SELECT u_nr FROM @ids";
+
+		ParsedQueries parsed = parse(sql);
+
+		assertEquals(1, parsed.getQueries().size());
+		ParsedQuery query = parsed.getQueries().get(0);
+		assertTrue(query.isBatch(), "Query should be flagged as batch");
+		assertEquals(QueryId.of(SOURCE_ID, "insert"), query.getQueryId());
+
+		String rendered = renderParts(query);
+		assertTrue(rendered.contains("DECLARE @ids TABLE (u_nr BIGINT);"),
+				"Batch query content should preserve DECLARE statement and its semicolon: " + rendered);
+		assertTrue(rendered.contains("INSERT INTO par_k (col1) OUTPUT inserted.u_nr INTO @ids VALUES (1);"),
+				"Batch query content should preserve INSERT statement and its semicolon: " + rendered);
+		assertTrue(rendered.contains("SELECT u_nr FROM @ids"),
+				"Batch query content should preserve SELECT statement: " + rendered);
+
+		assertEquals(2, countOccurrences(rendered, ";"),
+				"Batch should contain exactly two semicolons (one per non-final statement): " + rendered);
+	}
+
+	@Test
+	public void testBatchInterleavedWithRegularQueries() {
+		String sql = "-- first\n"
+				+ "SELECT 1;\n"
+				+ "-- second (batch)\n"
+				+ "DECLARE @t TABLE (u BIGINT);\n"
+				+ "INSERT INTO @t VALUES (42);\n"
+				+ "SELECT u FROM @t;\n"
+				+ "-- third\n"
+				+ "SELECT 3";
+
+		ParsedQueries parsed = parse(sql);
+
+		assertEquals(3, parsed.getQueries().size());
+
+		ParsedQuery first = parsed.getQueries().get(0);
+		ParsedQuery second = parsed.getQueries().get(1);
+		ParsedQuery third = parsed.getQueries().get(2);
+
+		assertFalse(first.isBatch());
+		assertTrue(second.isBatch());
+		assertFalse(third.isBatch());
+
+		assertEquals(QueryId.of(SOURCE_ID, "first"), first.getQueryId());
+		assertEquals(QueryId.of(SOURCE_ID, "second"), second.getQueryId());
+		assertEquals(QueryId.of(SOURCE_ID, "third"), third.getQueryId());
+
+		String firstRendered = renderParts(first);
+		assertTrue(firstRendered.contains("SELECT 1"));
+		assertFalse(firstRendered.contains(";"),
+				"Regular (non-batch) query should not retain its terminating semicolon: " + firstRendered);
+
+		String secondRendered = renderParts(second);
+		assertTrue(secondRendered.contains("DECLARE @t TABLE (u BIGINT);"));
+		assertTrue(secondRendered.contains("INSERT INTO @t VALUES (42);"));
+		assertTrue(secondRendered.contains("SELECT u FROM @t;"));
+		assertFalse(secondRendered.contains("SELECT 3"),
+				"Batch should NOT absorb the next named query: " + secondRendered);
+
+		String thirdRendered = renderParts(third);
+		assertTrue(thirdRendered.contains("SELECT 3"));
+		assertFalse(thirdRendered.contains(";"));
+	}
+
+	@Test
+	public void testBatchQueryAtEofTerminatesCorrectly() {
+		String sql = "-- batchAtEof (batch)\n"
+				+ "DECLARE @t TABLE (u BIGINT);\n"
+				+ "INSERT INTO @t VALUES (1);\n"
+				+ "SELECT u FROM @t";
+
+		ParsedQueries parsed = parse(sql);
+
+		assertEquals(1, parsed.getQueries().size());
+		ParsedQuery query = parsed.getQueries().get(0);
+		assertTrue(query.isBatch());
+		assertEquals(QueryId.of(SOURCE_ID, "batchAtEof"), query.getQueryId());
+
+		String rendered = renderParts(query);
+		assertTrue(rendered.contains("DECLARE @t TABLE (u BIGINT);"));
+		assertTrue(rendered.contains("INSERT INTO @t VALUES (1);"));
+		assertTrue(rendered.contains("SELECT u FROM @t"));
+		assertFalse(rendered.endsWith(";"),
+				"Trailing statement without ; in source should not get a synthetic ; added: " + rendered);
+	}
+
+	@Test
+	public void testEmptyBatchQuery() {
+		String sql = "-- empty (batch)\n";
+
+		ParsedQueries parsed = parse(sql);
+
+		assertEquals(1, parsed.getQueries().size());
+		ParsedQuery query = parsed.getQueries().get(0);
+		assertTrue(query.isBatch());
+		assertEquals(QueryId.of(SOURCE_ID, "empty"), query.getQueryId());
+	}
+
+	@Test
+	public void testBatchMarkerStrippedFromQueryId() {
+		String sql = "-- myQuery name (batch)\n"
+				+ "SELECT 1;\n"
+				+ "SELECT 2";
+
+		ParsedQueries parsed = parse(sql);
+
+		assertEquals(1, parsed.getQueries().size());
+		ParsedQuery query = parsed.getQueries().get(0);
+		assertTrue(query.isBatch());
+		assertEquals(QueryId.of(SOURCE_ID, "myQuery name"), query.getQueryId());
+	}
+
+	@Test
+	public void testBatchMarkerCaseInsensitive() {
+		String sql = "-- mixedCase (BATCH)\n"
+				+ "SELECT 1;\n"
+				+ "SELECT 2";
+
+		ParsedQueries parsed = parse(sql);
+
+		assertEquals(1, parsed.getQueries().size());
+		ParsedQuery query = parsed.getQueries().get(0);
+		assertTrue(query.isBatch());
+		assertEquals(QueryId.of(SOURCE_ID, "mixedCase"), query.getQueryId());
+	}
+
+	@Test
+	public void testBatchMarkerWithBlockComment() {
+		String sql = "/* blockBatch (batch) */"
+				+ "SELECT 1;"
+				+ "SELECT 2";
+
+		ParsedQueries parsed = parse(sql);
+
+		assertEquals(1, parsed.getQueries().size());
+		ParsedQuery query = parsed.getQueries().get(0);
+		assertTrue(query.isBatch());
+		assertEquals(QueryId.of(SOURCE_ID, "blockBatch"), query.getQueryId());
+	}
+
+	@Test
+	public void testNamedVariablesPreservedAcrossBatchStatements() {
+		String sql = "-- withParams (batch)\n"
+				+ "DECLARE @t TABLE (u BIGINT);\n"
+				+ "INSERT INTO @t VALUES (:firstParam);\n"
+				+ "SELECT u FROM @t WHERE u = :secondParam";
+
+		ParsedQueries parsed = parse(sql);
+
+		assertEquals(1, parsed.getQueries().size());
+		ParsedQuery query = parsed.getQueries().get(0);
+		assertTrue(query.isBatch());
+
+		long namedVarCount = query.getParts().stream().filter(ParsedQueryPart::isNamedVariable).count();
+		assertEquals(2L, namedVarCount,
+				"Both named variables should be preserved across batch statements");
+	}
+
+	/**
+	 * Backward compatibility: a regular (non-batch) query that has the literal
+	 * text "(batch)" inside an inline body comment must NOT be treated as
+	 * batch — only the name-comment is inspected for the marker.
+	 */
+	@Test
+	public void testBatchMarkerInBodyCommentDoesNotMakeQueryBatch() {
+		String sql = "-- normalQuery\n"
+				+ "SELECT 1\n"
+				+ "-- some note mentioning (batch) inside body\n"
+				+ ";";
+
+		ParsedQueries parsed = parse(sql);
+
+		assertEquals(1, parsed.getQueries().size());
+		ParsedQuery query = parsed.getQueries().get(0);
+		assertFalse(query.isBatch(),
+				"Marker inside a body comment (not the name-comment) must not flip the batch flag");
+		assertEquals(QueryId.of(SOURCE_ID, "normalQuery"), query.getQueryId());
+	}
+
+	private ParsedQueries parse(String sql) {
+		QueriesSource source = mock(QueriesSource.class);
+		when(source.readContent(Mockito.any())).thenReturn(sql);
+		when(source.getId()).thenReturn(SOURCE_ID);
+		return parser.parse(source);
+	}
+
+	private static String renderParts(ParsedQuery query) {
+		StringBuilder sb = new StringBuilder();
+		for (ParsedQueryPart p : query.getParts()) {
+			sb.append(p.getContent());
+		}
+		return sb.toString();
+	}
+
+	private static int countOccurrences(String haystack, String needle) {
+		int count = 0;
+		int idx = 0;
+		while ((idx = haystack.indexOf(needle, idx)) != -1) {
+			count++;
+			idx += needle.length();
+		}
+		return count;
 	}
 
 	@Test

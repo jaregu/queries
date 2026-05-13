@@ -3,6 +3,7 @@ package com.jaregu.database.queries.parsing;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,15 @@ class QueriesParserImpl implements QueriesParser {
 			.skipAllBetween("\"", "\"").skipSequence("::").stopAfterAnyOf(";").stopBeforeAnyOf("--", "/*", ":", "?")
 			.stopAtEof();
 	private static final StringSplitter BREAK_TO_LINES = StringSplitter.on('\n').includeSeparator(true);
+
+	/**
+	 * Matches a name-comment content with a trailing {@code (batch)} marker —
+	 * e.g. {@code insert (batch)} or {@code do something else (BATCH)}. The
+	 * first group captures the actual query name.
+	 */
+	private static final Pattern BATCH_MARKER = Pattern.compile("(.*?)\\s*\\(batch\\)\\s*",
+			Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
 	private final QueriesConfig config;
 
 	QueriesParserImpl(QueriesConfig config) {
@@ -33,7 +43,7 @@ class QueriesParserImpl implements QueriesParser {
 	@Override
 	public ParsedQueries parse(QueriesSource source) {
 		List<String> parts = splitSource(source.readContent(config));
-		List<List<ParsedQueryPart>> queries = groupQueries(parts);
+		List<GroupedQuery> queries = groupQueries(parts);
 		List<ParsedQuery> sourceQueries = queries.stream().map(q -> createSourceQuery(source.getId(), q))
 				.collect(Collectors.toList());
 		return new ParsedQueriesImpl(source.getId(), sourceQueries);
@@ -61,33 +71,96 @@ class QueriesParserImpl implements QueriesParser {
 		return parts;
 	}
 
-	private List<List<ParsedQueryPart>> groupQueries(List<String> parts) {
-		List<List<ParsedQueryPart>> queries = new LinkedList<>();
+	private List<GroupedQuery> groupQueries(List<String> parts) {
+		List<RawGroup> rawGroups = rawGroup(parts);
+		return mergeBatchGroups(rawGroups);
+	}
+
+	private List<RawGroup> rawGroup(List<String> parts) {
+		List<RawGroup> queries = new LinkedList<>();
 		List<ParsedQueryPart> currentQuery = new LinkedList<>();
 		for (String part : parts) {
-			// boolean endingPart = && part.endsWith(";");
-			// endingPart ? part.substring(0, part.length() - 1) :
 			ParsedQueryPart queryPart = ParsedQueryPart.create(part);
 			if (!queryPart.isComment() && queryPart.getContent().endsWith(";")) {
 				currentQuery.add(ParsedQueryPart.create(part.substring(0, part.indexOf(";"))));
-				queries.add(currentQuery);
+				queries.add(new RawGroup(currentQuery, true));
 				currentQuery = new LinkedList<>();
 			} else {
 				currentQuery.add(queryPart);
 			}
 		}
 		if (!currentQuery.isEmpty() && currentQuery.stream().anyMatch(s -> s.getContent().trim().length() > 0)) {
-			queries.add(currentQuery);
+			queries.add(new RawGroup(currentQuery, false));
 		}
 		return queries;
 	}
 
-	private ParsedQueryImpl createSourceQuery(SourceId sourceId, List<ParsedQueryPart> parts) {
+	private List<GroupedQuery> mergeBatchGroups(List<RawGroup> rawGroups) {
+		List<GroupedQuery> result = new LinkedList<>();
+		int i = 0;
+		while (i < rawGroups.size()) {
+			RawGroup group = rawGroups.get(i);
+			if (!hasBatchMarker(group.parts)) {
+				result.add(new GroupedQuery(group.parts, false));
+				i++;
+				continue;
+			}
+			List<ParsedQueryPart> merged = new LinkedList<>(group.parts);
+			int j = i + 1;
+			// Absorb following groups (re-inserting the ; that was stripped between
+			// them) until we encounter a group whose first non-whitespace part is
+			// a comment — that's the next query's name-comment.
+			while (group.terminated && j < rawGroups.size() && !startsWithComment(rawGroups.get(j).parts)) {
+				merged.add(ParsedQueryPart.create(";"));
+				merged.addAll(rawGroups.get(j).parts);
+				group = rawGroups.get(j);
+				j++;
+			}
+			// If the batch group's final absorbed sub-group was ;-terminated,
+			// preserve that terminator too.
+			if (group.terminated) {
+				merged.add(ParsedQueryPart.create(";"));
+			}
+			result.add(new GroupedQuery(merged, true));
+			i = j;
+		}
+		return result;
+	}
+
+	private boolean hasBatchMarker(List<ParsedQueryPart> parts) {
+		for (ParsedQueryPart p : parts) {
+			if (p.isComment()) {
+				return BATCH_MARKER.matcher(p.getCommentContent()).matches();
+			}
+		}
+		return false;
+	}
+
+	private boolean startsWithComment(List<ParsedQueryPart> parts) {
+		for (ParsedQueryPart p : parts) {
+			if (p.isComment()) {
+				return true;
+			}
+			if (p.getContent().trim().length() > 0) {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	private ParsedQueryImpl createSourceQuery(SourceId sourceId, GroupedQuery group) {
+		List<ParsedQueryPart> parts = group.parts;
 		List<ParsedQueryPart> queryParts = new ArrayList<>(parts.size() + 1);
 		QueryId queryId = null;
 		for (ParsedQueryPart part : parts) {
 			if (queryId == null && part.isComment()) {
-				queryId = QueryId.of(sourceId, part.getCommentContent());
+				String commentContent = part.getCommentContent();
+				String queryName = commentContent;
+				Matcher matcher = BATCH_MARKER.matcher(commentContent);
+				if (matcher.matches()) {
+					queryName = matcher.group(1).trim();
+				}
+				queryId = QueryId.of(sourceId, queryName);
 				queryParts.add(ParsedQueryPart.create(part.getCommentType().wrap(" QUERY ID: " + queryId)));
 			} else {
 				queryParts.add(part);
@@ -100,6 +173,35 @@ class QueriesParserImpl implements QueriesParser {
 							+ parts);
 		}
 
-		return new ParsedQueryImpl(queryId, queryParts);
+		return new ParsedQueryImpl(queryId, queryParts, group.isBatch);
+	}
+
+	/**
+	 * Raw query group from the first parsing pass — same shape as the original
+	 * {@code groupQueries} output, plus a flag tracking whether the group ended
+	 * at a {@code ;} terminator (vs. running to EOF).
+	 */
+	private static final class RawGroup {
+		final List<ParsedQueryPart> parts;
+		final boolean terminated;
+
+		RawGroup(List<ParsedQueryPart> parts, boolean terminated) {
+			this.parts = parts;
+			this.terminated = terminated;
+		}
+	}
+
+	/**
+	 * Post-batch-merge group; carries whether the resulting {@link ParsedQuery}
+	 * should be flagged as a batch query.
+	 */
+	private static final class GroupedQuery {
+		final List<ParsedQueryPart> parts;
+		final boolean isBatch;
+
+		GroupedQuery(List<ParsedQueryPart> parts, boolean isBatch) {
+			this.parts = parts;
+			this.isBatch = isBatch;
+		}
 	}
 }
