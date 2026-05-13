@@ -39,3 +39,12 @@ jobs:
             publishToSonatype \
             closeAndReleaseSonatypeStagingRepository \
             --stacktrace
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag
